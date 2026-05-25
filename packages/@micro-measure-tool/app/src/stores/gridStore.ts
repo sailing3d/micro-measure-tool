@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import type { GridState } from "../types";
 
 interface GridActions {
@@ -18,11 +19,16 @@ const DEFAULT: GridState = {
   panY: 0,
 };
 
-export const useGridStore = create<GridState & GridActions>()((set) => ({
-  ...DEFAULT,
-  setRows: (rows) => set({ rows }),
-  setCols: (cols) => set({ cols }),
-  setCellWidth: (cellWidth) => set({ cellWidth }),
-  setCellHeight: (cellHeight) => set({ cellHeight }),
-  setPan: (x, y) => set({ panX: x, panY: y }),
-}));
+export const useGridStore = create<GridState & GridActions>()(
+  persist(
+    (set) => ({
+      ...DEFAULT,
+      setRows: (rows) => set({ rows }),
+      setCols: (cols) => set({ cols }),
+      setCellWidth: (cellWidth) => set({ cellWidth }),
+      setCellHeight: (cellHeight) => set({ cellHeight }),
+      setPan: (x, y) => set({ panX: x, panY: y }),
+    }),
+    { name: "mmt-grid", storage: createJSONStorage(() => sessionStorage) },
+  ),
+);

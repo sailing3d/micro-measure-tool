@@ -63,6 +63,7 @@ export default function ImageLayer({ selectedId, onSelectImage }: Props) {
   const setDisplayZoom = useCalibrationStore((s) => s.setDisplayZoom);
   const cellWidth = useGridStore((s) => s.cellWidth);
   const cellHeight = useGridStore((s) => s.cellHeight);
+  const updateImage = useImagesStore((s) => s.updateImage);
 
   const imageMapRef = useRef<Map<string, HTMLImageElement>>(new Map());
   const knownIdsRef = useRef(new Set<string>());
@@ -80,13 +81,19 @@ export default function ImageLayer({ selectedId, onSelectImage }: Props) {
       if (prevZoom.current === displayZoom) {
         el.onload = () => {
           if (el.naturalWidth > 0 && el.naturalHeight > 0) {
-            const zoom = Math.min(
+            const zoom = Math.max(
               cellWidth / el.naturalWidth,
               cellHeight / el.naturalHeight,
             );
             if (zoom > 0) {
               setDisplayZoom(zoom);
               prevZoom.current = zoom;
+              const vw = el.naturalWidth * zoom;
+              const vh = el.naturalHeight * zoom;
+              updateImage(img.id, {
+                offsetX: Math.round((cellWidth - vw) / 2),
+                offsetY: Math.round((cellHeight - vh) / 2),
+              });
             }
           }
         };

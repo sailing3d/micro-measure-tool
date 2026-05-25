@@ -49,16 +49,25 @@ export default function ImageGroup({
   const visualW = imgW * imageData.scale;
   const visualH = imgH * imageData.scale;
 
+  const centerX = cellX + imageData.offsetX + visualW / 2;
+  const centerY = cellY + imageData.offsetY + visualH / 2;
+
   const handleDragEnd = useCallback(
     (e: Konva.KonvaEventObject<DragEvent>) => {
-      const nx = Math.round(e.target.x());
-      const ny = Math.round(e.target.y());
+      const newCenterX = e.target.x();
+      const newCenterY = e.target.y();
 
-      const centerX = cellX + nx + visualW / 2;
-      const centerY = cellY + ny + visualH / 2;
+      const newLeft = newCenterX - visualW / 2;
+      const newTop = newCenterY - visualH / 2;
 
-      const newCol = Math.floor((centerX - PADDING) / cellWidth);
-      const newRow = Math.floor((centerY - PADDING) / cellHeight);
+      const relX = newLeft - cellX;
+      const relY = newTop - cellY;
+
+      const imgCenterX = newCenterX;
+      const imgCenterY = newCenterY;
+
+      const newCol = Math.floor((imgCenterX - PADDING) / cellWidth);
+      const newRow = Math.floor((imgCenterY - PADDING) / cellHeight);
       const newIdx = newRow * cols + newCol;
 
       if (
@@ -68,11 +77,26 @@ export default function ImageGroup({
       ) {
         const targetImg = images.find((i) => i.cellIndex === newIdx);
         if (targetImg) {
-          updateImage(targetImg.id, { cellIndex: imageData.cellIndex });
+          moveImageToCell(
+            targetImg.id,
+            imageData.cellIndex,
+            imageData.offsetX,
+            imageData.offsetY,
+          );
         }
-        moveImageToCell(imageData.id, newIdx);
+        const newCellNX = newCol * cellWidth + PADDING;
+        const newCellNY = newRow * cellHeight + PADDING;
+        moveImageToCell(
+          imageData.id,
+          newIdx,
+          Math.round(newCenterX - newCellNX - visualW / 2),
+          Math.round(newCenterY - newCellNY - visualH / 2),
+        );
       } else {
-        updateImage(imageData.id, { offsetX: nx, offsetY: ny });
+        updateImage(imageData.id, {
+          offsetX: Math.round(relX),
+          offsetY: Math.round(relY),
+        });
       }
     },
     [
@@ -95,71 +119,15 @@ export default function ImageGroup({
     const node = groupRef.current;
     if (!node) return;
     const finalScale = node.scaleX();
+    const finalRot = node.rotation();
     node.scaleX(1);
     node.scaleY(1);
-    updateImage(imageData.id, { scale: finalScale });
+    node.rotation(0);
+    updateImage(imageData.id, {
+      scale: finalScale,
+      rotation: Math.round(finalRot),
+    });
   }, [imageData, updateImage]);
-
-  const rotating = useRef(false);
-  const rotateBaseAngle = useRef(0);
-
-  const handleRotateStart = useCallback(
-    (e: Konva.KonvaEventObject<MouseEvent>) => {
-      if (e.evt.button !== 2) return;
-      e.evt.preventDefault();
-      e.evt.stopPropagation();
-      const stage = groupRef.current?.getStage();
-      if (!stage) return;
-      const pos = stage.getPointerPosition();
-      if (!pos) return;
-      const imgCenterX =
-        cellX + imageData.offsetX + visualW / 2;
-      const imgCenterY =
-        cellY + imageData.offsetY + visualH / 2;
-      const mouseAngle =
-        (Math.atan2(pos.y - imgCenterY, pos.x - imgCenterX) * 180) / Math.PI;
-      rotating.current = true;
-      rotateBaseAngle.current = mouseAngle - imageData.rotation;
-    },
-    [cellX, cellY, imageData, visualW, visualH],
-  );
-
-  useEffect(() => {
-    const node = groupRef.current;
-    if (!node) return;
-
-    function onMove() {
-      if (!rotating.current) return;
-      const stage = node?.getStage();
-      if (!stage) return;
-      const pos = stage.getPointerPosition();
-      if (!pos) return;
-      const imgCenterX =
-        cellX + imageData.offsetX + visualW / 2;
-      const imgCenterY =
-        cellY + imageData.offsetY + visualH / 2;
-      const mouseAngle =
-        (Math.atan2(pos.y - imgCenterY, pos.x - imgCenterX) * 180) / Math.PI;
-      const newRot = Math.round(mouseAngle - rotateBaseAngle.current);
-      updateImage(imageData.id, { rotation: newRot });
-    }
-
-    function onUp() {
-      rotating.current = false;
-    }
-
-    const stage = node.getStage();
-    if (stage) {
-      stage.on("mousemove.rotate", onMove);
-      stage.on("mouseup.rotate", onUp);
-    }
-    return () => {
-      if (stage) {
-        stage.off("mousemove.rotate", onMove);
-        stage.off("mouseup.rotate", onUp);
-      }
-    };
-  }, [imageData, updateImage, cellX, cellY, visualW, visualH]);
 
   useEffect(() => {
     if (isSelected && trRef.current && groupRef.current) {
@@ -180,15 +148,16 @@ export default function ImageGroup({
       >
         <Group
           ref={groupRef}
-          x={imageData.offsetX}
-          y={imageData.offsetY}
+          x={centerX}
+          y={centerY}
+          offsetX={visualW / 2}
+          offsetY={visualH / 2}
           draggable
           rotation={imageData.rotation}
           scaleX={imageData.scale}
           scaleY={imageData.scale}
           onClick={onSelect}
           onTap={onSelect}
-          onMouseDown={handleRotateStart}
           onDragEnd={handleDragEnd}
           onTransformEnd={handleTransformEnd}
         >
@@ -200,10 +169,9 @@ export default function ImageGroup({
         <>
           <Transformer
             ref={trRef}
-            rotateEnabled={false}
             boundBoxFunc={(_oldBox, newBox) => {
+              if (visualW <= 0 || visualH <= 0) return newBox;
               const ratio = visualW / visualH;
-              if (ratio <= 0) return newBox;
               const w = Math.max(20, newBox.width);
               return { ...newBox, width: w, height: w / ratio };
             }}

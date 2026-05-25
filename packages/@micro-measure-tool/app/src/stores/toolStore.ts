@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 interface ToolState {
   activeToolId: string | null;
@@ -8,10 +9,15 @@ interface ToolState {
   finishMeasuring: () => void;
 }
 
-export const useToolStore = create<ToolState>()((set) => ({
-  activeToolId: null,
-  isMeasuring: false,
-  selectTool: (activeToolId) => set({ activeToolId, isMeasuring: false }),
-  startMeasuring: () => set({ isMeasuring: true }),
-  finishMeasuring: () => set({ isMeasuring: false }),
-}));
+export const useToolStore = create<ToolState>()(
+  persist(
+    (set) => ({
+      activeToolId: null,
+      isMeasuring: false,
+      selectTool: (activeToolId) => set({ activeToolId, isMeasuring: false }),
+      startMeasuring: () => set({ isMeasuring: true }),
+      finishMeasuring: () => set({ isMeasuring: false }),
+    }),
+    { name: "mmt-tool", storage: createJSONStorage(() => sessionStorage) },
+  ),
+);

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 interface ProjectState {
   name: string;
@@ -7,9 +8,14 @@ interface ProjectState {
   closeProject: () => void;
 }
 
-export const useProjectStore = create<ProjectState>()((set) => ({
-  name: "",
-  isOpen: false,
-  openProject: (name) => set({ name, isOpen: true }),
-  closeProject: () => set({ name: "", isOpen: false }),
-}));
+export const useProjectStore = create<ProjectState>()(
+  persist(
+    (set) => ({
+      name: "",
+      isOpen: false,
+      openProject: (name) => set({ name, isOpen: true }),
+      closeProject: () => set({ name: "", isOpen: false }),
+    }),
+    { name: "mmt-project", storage: createJSONStorage(() => sessionStorage) },
+  ),
+);

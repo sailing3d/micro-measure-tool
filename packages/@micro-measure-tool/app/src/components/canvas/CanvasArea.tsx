@@ -85,8 +85,6 @@ export default function CanvasArea() {
     (e: Konva.KonvaEventObject<MouseEvent>) => {
       if (e.evt.button === 2) {
         e.evt.preventDefault();
-        const pos = stageRef.current?.getPointerPosition();
-        if (pos && findImageAtPoint(pos)) return;
         isPanning.current = true;
         panStart.current = { x: e.evt.clientX, y: e.evt.clientY, panX, panY };
         return;
