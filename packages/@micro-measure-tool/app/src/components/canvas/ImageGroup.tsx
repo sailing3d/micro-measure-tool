@@ -183,10 +183,22 @@ export default function ImageGroup({
             text="x" fontSize={10} fill="#fff" listening={false} />
           <Rect x={cellX + cellWidth - 24} y={cellY + 2}
             width={22} height={18} fill="#4b5563" cornerRadius={3}
-            onClick={() => updateImage(imageData.id,
-              { offsetX: 0, offsetY: 0, rotation: 0, scale: 1 })}
-            onTap={() => updateImage(imageData.id,
-              { offsetX: 0, offsetY: 0, rotation: 0, scale: 1 })} />
+            onClick={() =>
+              updateImage(imageData.id, {
+                offsetX: Math.round((cellWidth - imgW) / 2),
+                offsetY: Math.round((cellHeight - imgH) / 2),
+                rotation: 0,
+                scale: 1,
+              })
+            }
+            onTap={() =>
+              updateImage(imageData.id, {
+                offsetX: Math.round((cellWidth - imgW) / 2),
+                offsetY: Math.round((cellHeight - imgH) / 2),
+                rotation: 0,
+                scale: 1,
+              })
+            } />
           <Text x={cellX + cellWidth - 22} y={cellY + 4}
             text="0" fontSize={10} fill="#fff" listening={false} />
         </>
