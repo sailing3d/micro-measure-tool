@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useShallow } from "zustand/shallow";
 import { createProject, openProject, listProjects, readImageAsBlobUrl } from "../../services/projectService";
 import { useProjectStore } from "../../stores/projectStore";
 import { useGridStore } from "../../stores/gridStore";
@@ -16,16 +17,20 @@ export default function StartupDialog({ onProjectOpened }: Props) {
   const [recentProjects] = useState(() => listProjects());
 
   const openProjectInStore = useProjectStore((s) => s.openProject);
-  const setGrid = useGridStore((s) => ({
-    setRows: s.setRows,
-    setCols: s.setCols,
-    setCellWidth: s.setCellWidth,
-    setCellHeight: s.setCellHeight,
-  }));
-  const setCalibration = useCalibrationStore((s) => ({
-    setRatio: s.setRatio,
-    setDisplayZoom: s.setDisplayZoom,
-  }));
+  const { setRows, setCols, setCellWidth, setCellHeight } = useGridStore(
+    useShallow((s) => ({
+      setRows: s.setRows,
+      setCols: s.setCols,
+      setCellWidth: s.setCellWidth,
+      setCellHeight: s.setCellHeight,
+    })),
+  );
+  const { setRatio, setDisplayZoom } = useCalibrationStore(
+    useShallow((s) => ({
+      setRatio: s.setRatio,
+      setDisplayZoom: s.setDisplayZoom,
+    })),
+  );
   const setImages = useImagesStore((s) => s.setImages);
   const setMeasurements = useMeasurementsStore((s) => s.setMeasurements);
 
@@ -35,12 +40,12 @@ export default function StartupDialog({ onProjectOpened }: Props) {
       const handle = await window.showDirectoryPicker({ mode: "readwrite" });
       await createProject(handle, projectName);
       openProjectInStore(projectName);
-      setGrid.setRows(3);
-      setGrid.setCols(3);
-      setGrid.setCellWidth(600);
-      setGrid.setCellHeight(400);
-      setCalibration.setRatio(1);
-      setCalibration.setDisplayZoom(1);
+      setRows(3);
+      setCols(3);
+      setCellWidth(600);
+      setCellHeight(400);
+      setRatio(1);
+      setDisplayZoom(1);
       setImages([]);
       setMeasurements([]);
       onProjectOpened();
@@ -56,12 +61,12 @@ export default function StartupDialog({ onProjectOpened }: Props) {
       const handle = await window.showDirectoryPicker({ mode: "readwrite" });
       const { data } = await openProject(handle);
       openProjectInStore(data.name);
-      setGrid.setRows(data.grid.rows);
-      setGrid.setCols(data.grid.cols);
-      setGrid.setCellWidth(data.grid.cellWidth);
-      setGrid.setCellHeight(data.grid.cellHeight);
-      setCalibration.setRatio(data.calibration.ratio);
-      setCalibration.setDisplayZoom(data.displayZoom);
+      setRows(data.grid.rows);
+      setCols(data.grid.cols);
+      setCellWidth(data.grid.cellWidth);
+      setCellHeight(data.grid.cellHeight);
+      setRatio(data.calibration.ratio);
+      setDisplayZoom(data.displayZoom);
 
       const imgsWithUrls = await Promise.all(
         data.images.map(async (img) => {

@@ -58,10 +58,8 @@ export default function ImageLayer() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const displayZoom = useCalibrationStore((s) => s.displayZoom);
   const setDisplayZoom = useCalibrationStore((s) => s.setDisplayZoom);
-  const { cellWidth, cellHeight } = useGridStore((s) => ({
-    cellWidth: s.cellWidth,
-    cellHeight: s.cellHeight,
-  }));
+  const cellWidth = useGridStore((s) => s.cellWidth);
+  const cellHeight = useGridStore((s) => s.cellHeight);
   const prevZoom = useRef(displayZoom);
   const [, forceRender] = useState(0);
 

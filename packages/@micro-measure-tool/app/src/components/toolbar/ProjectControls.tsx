@@ -16,30 +16,26 @@ export default function ProjectControls() {
   const closeProject = useProjectStore((s) => s.closeProject);
   const images = useImagesStore((s) => s.images);
   const measurements = useMeasurementsStore((s) => s.measurements);
-  const grid = useGridStore((s) => ({
-    rows: s.rows,
-    cols: s.cols,
-    cellWidth: s.cellWidth,
-    cellHeight: s.cellHeight,
-    panX: s.panX,
-    panY: s.panY,
-  }));
-  const calibration = useCalibrationStore((s) => ({
-    ratio: s.ratio,
-    displayZoom: s.displayZoom,
-  }));
+  const rows = useGridStore((s) => s.rows);
+  const cols = useGridStore((s) => s.cols);
+  const cellWidth = useGridStore((s) => s.cellWidth);
+  const cellHeight = useGridStore((s) => s.cellHeight);
+  const panX = useGridStore((s) => s.panX);
+  const panY = useGridStore((s) => s.panY);
+  const ratio = useCalibrationStore((s) => s.ratio);
+  const displayZoom = useCalibrationStore((s) => s.displayZoom);
   const [exportOpen, setExportOpen] = useState(false);
 
   const handleSave = useCallback(async () => {
     if (!currentFolderHandle) return;
     await saveProject(currentFolderHandle, {
       name,
-      grid,
-      calibration,
+      grid: { rows, cols, cellWidth, cellHeight, panX, panY },
+      calibration: { ratio, displayZoom },
       images,
       measurements,
     });
-  }, [name, grid, calibration, images, measurements]);
+  }, [name, rows, cols, cellWidth, cellHeight, panX, panY, ratio, displayZoom, images, measurements]);
 
   const handleExport = useCallback(
     async (format: "md" | "csv") => {

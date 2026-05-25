@@ -22,12 +22,10 @@ export default function CanvasArea() {
   const panX = useGridStore((s) => s.panX);
   const panY = useGridStore((s) => s.panY);
   const setPan = useGridStore((s) => s.setPan);
-  const { rows, cols, cellWidth, cellHeight } = useGridStore((s) => ({
-    rows: s.rows,
-    cols: s.cols,
-    cellWidth: s.cellWidth,
-    cellHeight: s.cellHeight,
-  }));
+  const rows = useGridStore((s) => s.rows);
+  const cols = useGridStore((s) => s.cols);
+  const cellWidth = useGridStore((s) => s.cellWidth);
+  const cellHeight = useGridStore((s) => s.cellHeight);
   const addImage = useImagesStore((s) => s.addImage);
   const images = useImagesStore((s) => s.images);
   const calibrating = useCalibrationStore((s) => s.calibrating);
