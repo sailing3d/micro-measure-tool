@@ -1,6 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useProjectStore } from "./stores/projectStore";
+import { useGridStore } from "./stores/gridStore";
+import { useCalibrationStore } from "./stores/calibrationStore";
+import { useImagesStore } from "./stores/imagesStore";
+import { useMeasurementsStore } from "./stores/measurementsStore";
 import { initTools } from "./tools/init";
+import { saveProject, currentFolderHandle } from "./services/projectService";
 import StartupDialog from "./components/startup/StartupDialog";
 import Toolbar from "./components/toolbar/Toolbar";
 import CanvasArea from "./components/canvas/CanvasArea";
@@ -8,14 +13,61 @@ import SidePanel from "./components/side-panel/SidePanel";
 
 export default function App() {
   const isOpen = useProjectStore((s) => s.isOpen);
+  const name = useProjectStore((s) => s.name);
   const [showStartup, setShowStartup] = useState(true);
+  const saveTimer = useRef<ReturnType<typeof setTimeout>>(null);
 
   useEffect(() => {
     initTools();
   }, []);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const unsubs = [
+      useGridStore.subscribe(() => scheduleSave()),
+      useCalibrationStore.subscribe(() => scheduleSave()),
+      useImagesStore.subscribe(() => scheduleSave()),
+      useMeasurementsStore.subscribe(() => scheduleSave()),
+    ];
+
+    function scheduleSave() {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(async () => {
+        if (!currentFolderHandle) return;
+        const grid = useGridStore.getState();
+        const cal = useCalibrationStore.getState();
+        const images = useImagesStore.getState().images;
+        const measurements = useMeasurementsStore.getState().measurements;
+        await saveProject(currentFolderHandle, {
+          name,
+          grid: {
+            rows: grid.rows,
+            cols: grid.cols,
+            cellWidth: grid.cellWidth,
+            cellHeight: grid.cellHeight,
+            panX: grid.panX,
+            panY: grid.panY,
+          },
+          calibration: { ratio: cal.ratio, displayZoom: cal.displayZoom },
+          images,
+          measurements,
+        });
+      }, 500);
+    }
+
+    return () => {
+      unsubs.forEach((u) => u());
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, [isOpen, name]);
+
   if (!isOpen || showStartup) {
-    return <StartupDialog onProjectOpened={() => setShowStartup(false)} />;
+    return (
+      <StartupDialog
+        onProjectOpened={() => setShowStartup(false)}
+      />
+    );
   }
 
   return (
