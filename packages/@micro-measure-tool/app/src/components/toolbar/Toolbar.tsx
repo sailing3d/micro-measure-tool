@@ -1,4 +1,5 @@
 import GridControls from "./GridControls";
+import CalibrationControls from "./CalibrationControls";
 
 export default function Toolbar() {
   return (
@@ -6,6 +7,8 @@ export default function Toolbar() {
       <span className="text-sm font-semibold text-gray-300">Micro Measure</span>
       <div className="h-5 w-px bg-gray-700" />
       <GridControls />
+      <div className="h-5 w-px bg-gray-700" />
+      <CalibrationControls />
     </div>
   );
 }
