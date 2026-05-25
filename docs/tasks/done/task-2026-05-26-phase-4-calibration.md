@@ -4,7 +4,7 @@ created: 2026-05-26
 date: 2026-05-26
 branch: task-2026-05-26-phase-4-calibration
 summary: 标定 UI: 直接输入比例或图上画线标定, 全局共享.
-status: todo
+status: done
 related:
   - doc-architecture
   - doc-requirements

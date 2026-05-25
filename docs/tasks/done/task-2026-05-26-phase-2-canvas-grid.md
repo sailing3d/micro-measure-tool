@@ -4,7 +4,7 @@ created: 2026-05-26
 date: 2026-05-26
 branch: task-2026-05-26-phase-2-canvas-grid
 summary: Konva Stage + GridLayer (格子渲染 + 右键平移), GridControls 工具栏.
-status: todo
+status: done
 related:
   - doc-architecture
   - doc-requirements

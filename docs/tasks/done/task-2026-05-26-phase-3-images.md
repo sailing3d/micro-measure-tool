@@ -4,7 +4,7 @@ created: 2026-05-26
 date: 2026-05-26
 branch: task-2026-05-26-phase-3-images
 summary: 图片拖入格子, 复制到项目, Konva 渲染, 格内移动/旋转/缩放, 格子间交换, 侧面板重命名.
-status: todo
+status: done
 related:
   - doc-architecture
   - doc-requirements

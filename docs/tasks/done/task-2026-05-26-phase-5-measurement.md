@@ -4,7 +4,7 @@ created: 2026-05-26
 date: 2026-05-26
 branch: task-2026-05-26-phase-5-measurement
 summary: 工具注册框架, H 型长度测量, 限定圆测量, ToolPreviewLayer.
-status: todo
+status: done
 related:
   - doc-architecture
   - doc-requirements

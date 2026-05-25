@@ -4,7 +4,7 @@ created: 2026-05-26
 date: 2026-05-26
 branch: task-2026-05-26-phase-6-results
 summary: 测量结果树形展示, 删除测量, Markdown/CSV 导出, 自动保存.
-status: todo
+status: done
 related:
   - doc-architecture
   - doc-requirements
