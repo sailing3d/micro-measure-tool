@@ -22,6 +22,7 @@ export default function CanvasArea() {
   const panX = useGridStore((s) => s.panX);
   const panY = useGridStore((s) => s.panY);
   const setPan = useGridStore((s) => s.setPan);
+  const [scale, setScale] = useState(1);
   const rows = useGridStore((s) => s.rows);
   const cols = useGridStore((s) => s.cols);
   const cellWidth = useGridStore((s) => s.cellWidth);
@@ -231,9 +232,30 @@ export default function CanvasArea() {
         height={size.height}
         x={panX}
         y={panY}
+        scaleX={scale}
+        scaleY={scale}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
+        onWheel={(e: Konva.KonvaEventObject<WheelEvent>) => {
+          e.evt.preventDefault();
+          const stage = stageRef.current;
+          if (!stage) return;
+          const oldScale = scale;
+          const pointer = stage.getPointerPosition();
+          if (!pointer) return;
+          const factor = e.evt.deltaY > 0 ? 0.9 : 1.1;
+          const newScale = Math.max(0.1, Math.min(5, oldScale * factor));
+          const mousePointTo = {
+            x: (pointer.x - panX) / oldScale,
+            y: (pointer.y - panY) / oldScale,
+          };
+          setScale(newScale);
+          setPan(
+            pointer.x - mousePointTo.x * newScale,
+            pointer.y - mousePointTo.y * newScale,
+          );
+        }}
       >
         <GridLayer
           selectedCellIndex={

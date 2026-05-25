@@ -13,6 +13,7 @@ import { useCalibrationStore } from "../../stores/calibrationStore";
 import type { ImageData } from "../../types";
 
 const PADDING = 20;
+const ROT_THRESHOLD = 3;
 
 interface Props {
   imageData: ImageData;
@@ -27,8 +28,6 @@ export default function ImageGroup({
   isSelected,
   onSelect,
 }: Props) {
-  const groupRef = useRef<Konva.Group>(null);
-  const trRef = useRef<Konva.Transformer>(null);
   const cellWidth = useGridStore((s) => s.cellWidth);
   const cellHeight = useGridStore((s) => s.cellHeight);
   const cols = useGridStore((s) => s.cols);
@@ -38,6 +37,10 @@ export default function ImageGroup({
   const removeImage = useImagesStore((s) => s.removeImage);
   const images = useImagesStore((s) => s.images);
   const moveImageToCell = useImagesStore((s) => s.moveImageToCell);
+
+  const posRef = useRef<Konva.Group>(null);
+  const transRef = useRef<Konva.Group>(null);
+  const trRef = useRef<Konva.Transformer>(null);
 
   const r = Math.floor(imageData.cellIndex / cols);
   const c = imageData.cellIndex % cols;
@@ -49,25 +52,22 @@ export default function ImageGroup({
   const visualW = imgW * imageData.scale;
   const visualH = imgH * imageData.scale;
 
-  const centerX = cellX + imageData.offsetX + visualW / 2;
-  const centerY = cellY + imageData.offsetY + visualH / 2;
+  const savedRot = useRef(imageData.rotation);
+  savedRot.current = imageData.rotation;
 
   const handleDragEnd = useCallback(
-    (e: Konva.KonvaEventObject<DragEvent>) => {
-      const newCenterX = e.target.x();
-      const newCenterY = e.target.y();
+    () => {
+      const pos = posRef.current;
+      if (!pos) return;
 
-      const newLeft = newCenterX - visualW / 2;
-      const newTop = newCenterY - visualH / 2;
+      const newRelX = Math.round(pos.x());
+      const newRelY = Math.round(pos.y());
 
-      const relX = newLeft - cellX;
-      const relY = newTop - cellY;
+      const centerX = cellX + newRelX + visualW / 2;
+      const centerY = cellY + newRelY + visualH / 2;
 
-      const imgCenterX = newCenterX;
-      const imgCenterY = newCenterY;
-
-      const newCol = Math.floor((imgCenterX - PADDING) / cellWidth);
-      const newRow = Math.floor((imgCenterY - PADDING) / cellHeight);
+      const newCol = Math.floor((centerX - PADDING) / cellWidth);
+      const newRow = Math.floor((centerY - PADDING) / cellHeight);
       const newIdx = newRow * cols + newCol;
 
       if (
@@ -77,25 +77,24 @@ export default function ImageGroup({
       ) {
         const targetImg = images.find((i) => i.cellIndex === newIdx);
         if (targetImg) {
+          const tR = Math.floor(targetImg.cellIndex / cols);
+          const tC = targetImg.cellIndex % cols;
           moveImageToCell(
             targetImg.id,
             imageData.cellIndex,
-            imageData.offsetX,
-            imageData.offsetY,
+            targetImg.offsetX - c * cellWidth + tC * cellWidth,
+            targetImg.offsetY - r * cellHeight + tR * cellHeight,
           );
         }
         const newCellNX = newCol * cellWidth + PADDING;
         const newCellNY = newRow * cellHeight + PADDING;
-        moveImageToCell(
-          imageData.id,
-          newIdx,
-          Math.round(newCenterX - newCellNX - visualW / 2),
-          Math.round(newCenterY - newCellNY - visualH / 2),
-        );
+        const newRelX2 = Math.round(newRelX + cellX - newCellNX);
+        const newRelY2 = Math.round(newRelY + cellY - newCellNY);
+        moveImageToCell(imageData.id, newIdx, newRelX2, newRelY2);
       } else {
         updateImage(imageData.id, {
-          offsetX: Math.round(relX),
-          offsetY: Math.round(relY),
+          offsetX: newRelX,
+          offsetY: newRelY,
         });
       }
     },
@@ -107,6 +106,8 @@ export default function ImageGroup({
       rows,
       cellX,
       cellY,
+      r,
+      c,
       visualW,
       visualH,
       updateImage,
@@ -116,25 +117,39 @@ export default function ImageGroup({
   );
 
   const handleTransformEnd = useCallback(() => {
-    const node = groupRef.current;
+    const node = transRef.current;
     if (!node) return;
+
     const finalScale = node.scaleX();
-    const finalRot = node.rotation();
+    const currentRot = node.rotation();
+    const rotDelta = Math.abs(currentRot - savedRot.current);
+
     node.scaleX(1);
     node.scaleY(1);
     node.rotation(0);
+
     updateImage(imageData.id, {
       scale: finalScale,
-      rotation: Math.round(finalRot),
+      rotation:
+        rotDelta > ROT_THRESHOLD
+          ? Math.round(currentRot)
+          : imageData.rotation,
     });
   }, [imageData, updateImage]);
 
   useEffect(() => {
-    if (isSelected && trRef.current && groupRef.current) {
-      trRef.current.nodes([groupRef.current]);
+    if (isSelected && trRef.current && transRef.current) {
+      trRef.current.nodes([transRef.current]);
       trRef.current.getLayer()?.batchDraw();
     }
-  }, [isSelected]);
+  }, [isSelected, imageData.scale, imageData.rotation]);
+
+  const handleSelect = useCallback(
+    () => {
+      onSelect();
+    },
+    [onSelect],
+  );
 
   return (
     <>
@@ -147,21 +162,27 @@ export default function ImageGroup({
         clipHeight={cellHeight}
       >
         <Group
-          ref={groupRef}
-          x={centerX}
-          y={centerY}
-          offsetX={visualW / 2}
-          offsetY={visualH / 2}
+          ref={posRef}
+          x={imageData.offsetX}
+          y={imageData.offsetY}
           draggable
-          rotation={imageData.rotation}
-          scaleX={imageData.scale}
-          scaleY={imageData.scale}
-          onClick={onSelect}
-          onTap={onSelect}
           onDragEnd={handleDragEnd}
-          onTransformEnd={handleTransformEnd}
         >
-          <KonvaImage image={imageElement} width={imgW} height={imgH} />
+          <Group
+            ref={transRef}
+            x={visualW / 2}
+            y={visualH / 2}
+            offsetX={visualW / 2}
+            offsetY={visualH / 2}
+            scaleX={imageData.scale}
+            scaleY={imageData.scale}
+            rotation={imageData.rotation}
+            onClick={handleSelect}
+            onTap={handleSelect}
+            onTransformEnd={handleTransformEnd}
+          >
+            <KonvaImage image={imageElement} width={imgW} height={imgH} />
+          </Group>
         </Group>
       </Group>
 
