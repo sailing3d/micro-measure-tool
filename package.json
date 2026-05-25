@@ -1,0 +1,15 @@
+{
+  "name": "micro-measure-tool",
+  "private": true,
+  "workspaces": [
+    "packages/@sailing3d/*",
+    "packages/@micro-measure-tool/*"
+  ],
+  "scripts": {
+    "dev": "npm -w @micro-measure-tool/app run dev",
+    "build": "npm -w @micro-measure-tool/app run build",
+    "preview": "npm -w @micro-measure-tool/app run preview",
+    "lint": "npm -w @micro-measure-tool/app run lint",
+    "typecheck": "npm -w @micro-measure-tool/app run typecheck"
+  }
+}
