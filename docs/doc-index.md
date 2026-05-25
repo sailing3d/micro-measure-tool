@@ -9,3 +9,4 @@ summary: docs 目录下的文档总索引.
 
 - [产品需求文档](doc-requirements.md)
 - [架构设计](doc-architecture.md)
+- [坐标系经验教训](doc-coordinate-system.md)
