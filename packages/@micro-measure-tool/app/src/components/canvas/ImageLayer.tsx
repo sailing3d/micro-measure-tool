@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useState, useRef } from "react";
 import { Layer, Line, Circle } from "react-konva";
 import { useImagesStore } from "../../stores/imagesStore";
 import { useCalibrationStore } from "../../stores/calibrationStore";
@@ -54,47 +54,46 @@ function renderMeasurement(m: MeasurementData) {
 export default function ImageLayer() {
   const images = useImagesStore((s) => s.images);
   const measurements = useMeasurementsStore((s) => s.measurements);
-  const imageElementsRef = useRef<Map<string, HTMLImageElement>>(new Map());
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const displayZoom = useCalibrationStore((s) => s.displayZoom);
   const setDisplayZoom = useCalibrationStore((s) => s.setDisplayZoom);
   const cellWidth = useGridStore((s) => s.cellWidth);
   const cellHeight = useGridStore((s) => s.cellHeight);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const imageMapRef = useRef<Map<string, HTMLImageElement>>(new Map());
   const prevZoom = useRef(displayZoom);
-  const [, forceRender] = useState(0);
+  const knownIdsRef = useRef(new Set<string>());
 
-  useEffect(() => {
-    if (images.length === 0) return;
-    const map = imageElementsRef.current;
-    let changed = false;
+  const currentMap = imageMapRef.current;
 
-    images.forEach((img) => {
-      if (!map.has(img.id) && img.filepath) {
-        changed = true;
-        const el = new window.Image();
-        el.src = img.filepath;
-        map.set(img.id, el);
+  for (const img of images) {
+    if (!knownIdsRef.current.has(img.id) && img.filepath) {
+      knownIdsRef.current.add(img.id);
+      const el = new window.Image();
+      el.src = img.filepath;
+      currentMap.set(img.id, el);
 
-        if (images.indexOf(img) === 0 && displayZoom === prevZoom.current) {
-          el.onload = () => {
+      if (prevZoom.current === displayZoom) {
+        el.onload = () => {
+          if (el.naturalWidth > 0 && el.naturalHeight > 0) {
             const zoom = Math.min(
               cellWidth / el.naturalWidth,
               cellHeight / el.naturalHeight,
             );
-            setDisplayZoom(zoom);
-            prevZoom.current = zoom;
-          };
-        }
+            if (zoom > 0) {
+              setDisplayZoom(zoom);
+              prevZoom.current = zoom;
+            }
+          }
+        };
       }
-    });
-
-    if (changed) forceRender((n) => n + 1);
-  }, [images, cellWidth, cellHeight, displayZoom, setDisplayZoom]);
+    }
+  }
 
   return (
     <Layer>
       {images.map((img) => {
-        const el = imageElementsRef.current.get(img.id);
+        const el = currentMap.get(img.id);
         if (!el) return null;
         return (
           <ImageGroup
