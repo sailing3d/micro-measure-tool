@@ -1,7 +1,12 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { Stage, Layer } from "react-konva";
 import { useGridStore } from "../../stores/gridStore";
+import { useImagesStore } from "../../stores/imagesStore";
+import { copyImageToProject } from "../../services/projectService";
 import GridLayer from "./GridLayer";
+import ImageLayer from "./ImageLayer";
+
+const PADDING = 20;
 
 export default function CanvasArea() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -9,6 +14,14 @@ export default function CanvasArea() {
   const panX = useGridStore((s) => s.panX);
   const panY = useGridStore((s) => s.panY);
   const setPan = useGridStore((s) => s.setPan);
+  const { rows, cols, cellWidth, cellHeight } = useGridStore((s) => ({
+    rows: s.rows,
+    cols: s.cols,
+    cellWidth: s.cellWidth,
+    cellHeight: s.cellHeight,
+  }));
+  const addImage = useImagesStore((s) => s.addImage);
+  const images = useImagesStore((s) => s.images);
 
   useEffect(() => {
     function updateSize() {
@@ -32,12 +45,7 @@ export default function CanvasArea() {
       if (e.evt.button === 2) {
         e.evt.preventDefault();
         isPanning.current = true;
-        panStart.current = {
-          x: e.evt.clientX,
-          y: e.evt.clientY,
-          panX,
-          panY,
-        };
+        panStart.current = { x: e.evt.clientX, y: e.evt.clientY, panX, panY };
       }
     },
     [panX, panY],
@@ -57,11 +65,60 @@ export default function CanvasArea() {
     isPanning.current = false;
   }, []);
 
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      const files = e.dataTransfer.files;
+      if (files.length === 0) return;
+
+      const rect = containerRef.current!.getBoundingClientRect();
+      const stageX = e.clientX - rect.left - panX;
+      const stageY = e.clientY - rect.top - panY;
+      const col = Math.floor((stageX - PADDING) / cellWidth);
+      const row = Math.floor((stageY - PADDING) / cellHeight);
+      const cellIdx =
+        col >= 0 && col < cols && row >= 0 && row < rows
+          ? row * cols + col
+          : -1;
+
+      if (cellIdx < 0) return;
+
+      const occupied = images.find((i) => i.cellIndex === cellIdx);
+      if (occupied) return;
+
+      const file = files[0];
+      const folderHandle = (await import("../../services/projectService"))
+        .currentFolderHandle;
+      if (!folderHandle) return;
+
+      const filename = await copyImageToProject(file, folderHandle);
+      const url = URL.createObjectURL(file);
+
+      addImage({
+        id: `img-${Date.now()}`,
+        filename,
+        filepath: url,
+        cellIndex: cellIdx,
+        offsetX: 0,
+        offsetY: 0,
+        rotation: 0,
+        scale: 1,
+      });
+    },
+    [panX, panY, cellWidth, cellHeight, cols, rows, images, addImage],
+  );
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+  }, []);
+
   return (
     <div
       ref={containerRef}
       className="flex-1 overflow-hidden bg-gray-950"
       onContextMenu={(e) => e.preventDefault()}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
     >
       <Stage
         width={size.width}
@@ -73,6 +130,7 @@ export default function CanvasArea() {
         onMouseUp={handleMouseUp}
       >
         <GridLayer />
+        <ImageLayer />
         <Layer />
       </Stage>
     </div>
