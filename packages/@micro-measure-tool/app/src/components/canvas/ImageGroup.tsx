@@ -108,14 +108,14 @@ export default function ImageGroup({
   const handleTransformEnd = useCallback(() => {
     const node = groupRef.current;
     if (!node) return;
-    const newScale = node.scaleX();
-    const rot = node.rotation();
+    const finalScale = node.getAbsoluteScale().x;
+    const finalRot = node.getAbsoluteRotation();
     node.scaleX(1);
     node.scaleY(1);
     node.rotation(0);
     updateImage(imageData.id, {
-      scale: newScale,
-      rotation: Math.round(rot),
+      scale: finalScale,
+      rotation: Math.round(finalRot),
     });
   }, [imageData, updateImage]);
 
@@ -156,7 +156,7 @@ export default function ImageGroup({
 
       {isSelected && (
         <>
-          <Transformer ref={trRef} />
+          <Transformer ref={trRef} keepRatio={true} />
           <Rect
             x={cellX + cellWidth - 48}
             y={cellY + 2}
