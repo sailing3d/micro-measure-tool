@@ -38,8 +38,7 @@ export default function ImageGroup({
   const images = useImagesStore((s) => s.images);
   const moveImageToCell = useImagesStore((s) => s.moveImageToCell);
 
-  const posRef = useRef<Konva.Group>(null);
-  const scaleRef = useRef<Konva.Group>(null);
+  const imgGroupRef = useRef<Konva.Group>(null);
   const trRef = useRef<Konva.Transformer>(null);
 
   const r = Math.floor(imageData.cellIndex / cols);
@@ -52,15 +51,16 @@ export default function ImageGroup({
   const visW = imgW * imageData.scale;
   const visH = imgH * imageData.scale;
 
+  const centerX = cellX + imageData.offsetX + imgW / 2;
+  const centerY = cellY + imageData.offsetY + imgH / 2;
+
   const handleDragEnd = useCallback(() => {
-    const pos = posRef.current;
-    if (!pos) return;
-    const nx = Math.round(pos.x());
-    const ny = Math.round(pos.y());
-    const cx = cellX + nx + imgW / 2;
-    const cy = cellY + ny + imgH / 2;
-    const nc = Math.floor((cx - PADDING) / cellWidth);
-    const nr = Math.floor((cy - PADDING) / cellHeight);
+    const node = imgGroupRef.current;
+    if (!node) return;
+    const nx = Math.round(node.x());
+    const ny = Math.round(node.y());
+    const nc = Math.floor((nx - PADDING) / cellWidth);
+    const nr = Math.floor((ny - PADDING) / cellHeight);
     const ni = nr * cols + nc;
 
     if (ni >= 0 && ni < rows * cols && ni !== imageData.cellIndex) {
@@ -72,28 +72,30 @@ export default function ImageGroup({
           tgt.offsetX - tc * cellWidth + c * cellWidth,
           tgt.offsetY - tr * cellHeight + r * cellHeight);
       }
-      const ncx = nc * cellWidth + PADDING;
-      const ncy = nr * cellHeight + PADDING;
+      const newCellX = nc * cellWidth + PADDING;
+      const newCellY = nr * cellHeight + PADDING;
       moveImageToCell(imageData.id, ni,
-        Math.round(nx + cellX - ncx),
-        Math.round(ny + cellY - ncy));
+        Math.round(nx - imgW / 2 - newCellX),
+        Math.round(ny - imgH / 2 - newCellY));
     } else {
-      updateImage(imageData.id, { offsetX: nx, offsetY: ny });
+      updateImage(imageData.id, {
+        offsetX: Math.round(nx - imgW / 2 - cellX),
+        offsetY: Math.round(ny - imgH / 2 - cellY),
+      });
     }
   }, [imageData, cellWidth, cellHeight, cols, rows, cellX, cellY, r, c, imgW, imgH, updateImage, moveImageToCell, images]);
 
-  const handleScaleEnd = useCallback(() => {
-    const node = scaleRef.current;
+  const handleTransformEnd = useCallback(() => {
+    const node = imgGroupRef.current;
     if (!node) return;
-    const s = node.scaleX();
-    updateImage(imageData.id, { scale: s });
+    updateImage(imageData.id, { scale: node.scaleX() });
   }, [imageData, updateImage]);
 
   const rotating = useRef(false);
   const baseAngle = useRef(0);
 
   useEffect(() => {
-    const node = posRef.current;
+    const node = imgGroupRef.current;
     if (!node) return;
 
     function onDown(e: Konva.KonvaEventObject<MouseEvent>) {
@@ -103,9 +105,7 @@ export default function ImageGroup({
       if (!stage) return;
       const p = stage.getPointerPosition();
       if (!p) return;
-      const cx = cellX + imageData.offsetX + imgW / 2;
-      const cy = cellY + imageData.offsetY + imgH / 2;
-      const ma = Math.atan2(p.y - cy, p.x - cx) * 180 / Math.PI;
+      const ma = Math.atan2(p.y - centerY, p.x - centerX) * 180 / Math.PI;
       rotatingRef.current = true;
       rotating.current = true;
       baseAngle.current = ma - imageData.rotation;
@@ -117,15 +117,14 @@ export default function ImageGroup({
       if (!stage) return;
       const p = stage.getPointerPosition();
       if (!p) return;
-      const cx = cellX + imageData.offsetX + imgW / 2;
-      const cy = cellY + imageData.offsetY + imgH / 2;
-      const ma = Math.atan2(p.y - cy, p.x - cx) * 180 / Math.PI;
+      const ma = Math.atan2(p.y - centerY, p.x - centerX) * 180 / Math.PI;
       updateImage(imageData.id, { rotation: Math.round(ma - baseAngle.current) });
     }
 
     function onUp() { rotating.current = false; rotatingRef.current = false; }
 
-    node.on("mousedown.rotimg", onDown);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    node.on("mousedown.rotimg", onDown as any);
     const stage = node.getStage();
     if (stage) {
       stage.on("mousemove.rotimg", onMove);
@@ -138,11 +137,11 @@ export default function ImageGroup({
         stage.off("mouseup.rotimg", onUp);
       }
     };
-  }, [imageData, updateImage, cellX, cellY, imgW, imgH]);
+  }, [imageData, updateImage, centerX, centerY]);
 
   useEffect(() => {
-    if (isSelected && trRef.current && scaleRef.current) {
-      trRef.current.nodes([scaleRef.current]);
+    if (isSelected && trRef.current && imgGroupRef.current) {
+      trRef.current.nodes([imgGroupRef.current]);
       trRef.current.getLayer()?.batchDraw();
     }
   }, [isSelected]);
@@ -151,18 +150,17 @@ export default function ImageGroup({
     <>
       <Group x={cellX} y={cellY}
         clipX={0} clipY={0} clipWidth={cellWidth} clipHeight={cellHeight}>
-        <Group ref={posRef}
-          x={imageData.offsetX} y={imageData.offsetY}
-          draggable onDragEnd={handleDragEnd}>
-          <Group ref={scaleRef}
-            x={imgW / 2} y={imgH / 2}
-            offsetX={imgW / 2} offsetY={imgH / 2}
-            rotation={imageData.rotation}
-            scaleX={imageData.scale} scaleY={imageData.scale}
-            onClick={onSelect} onTap={onSelect}
-            onTransformEnd={handleScaleEnd}>
-            <KonvaImage image={imageElement} width={imgW} height={imgH} />
-          </Group>
+        <Group ref={imgGroupRef}
+          x={centerX} y={centerY}
+          draggable
+          rotation={imageData.rotation}
+          scaleX={imageData.scale} scaleY={imageData.scale}
+          onClick={onSelect} onTap={onSelect}
+          onDragEnd={handleDragEnd}
+          onTransformEnd={handleTransformEnd}>
+          <KonvaImage image={imageElement}
+            width={imgW} height={imgH}
+            offsetX={imgW / 2} offsetY={imgH / 2} />
         </Group>
       </Group>
 
@@ -183,22 +181,18 @@ export default function ImageGroup({
             text="x" fontSize={10} fill="#fff" listening={false} />
           <Rect x={cellX + cellWidth - 24} y={cellY + 2}
             width={22} height={18} fill="#4b5563" cornerRadius={3}
-            onClick={() =>
-              updateImage(imageData.id, {
-                offsetX: Math.round((cellWidth - imgW) / 2),
-                offsetY: Math.round((cellHeight - imgH) / 2),
-                rotation: 0,
-                scale: 1,
-              })
-            }
-            onTap={() =>
-              updateImage(imageData.id, {
-                offsetX: Math.round((cellWidth - imgW) / 2),
-                offsetY: Math.round((cellHeight - imgH) / 2),
-                rotation: 0,
-                scale: 1,
-              })
-            } />
+            onClick={() => updateImage(imageData.id, {
+              offsetX: Math.round((cellWidth - imgW) / 2),
+              offsetY: Math.round((cellHeight - imgH) / 2),
+              rotation: 0,
+              scale: 1,
+            })}
+            onTap={() => updateImage(imageData.id, {
+              offsetX: Math.round((cellWidth - imgW) / 2),
+              offsetY: Math.round((cellHeight - imgH) / 2),
+              rotation: 0,
+              scale: 1,
+            })} />
           <Text x={cellX + cellWidth - 22} y={cellY + 4}
             text="0" fontSize={10} fill="#fff" listening={false} />
         </>
