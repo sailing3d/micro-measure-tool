@@ -57,8 +57,8 @@ export default function ImageGroup({
     if (!pos) return;
     const nx = Math.round(pos.x());
     const ny = Math.round(pos.y());
-    const cx = cellX + nx + visW / 2;
-    const cy = cellY + ny + visH / 2;
+    const cx = cellX + nx + imgW / 2;
+    const cy = cellY + ny + imgH / 2;
     const nc = Math.floor((cx - PADDING) / cellWidth);
     const nr = Math.floor((cy - PADDING) / cellHeight);
     const ni = nr * cols + nc;
@@ -80,7 +80,7 @@ export default function ImageGroup({
     } else {
       updateImage(imageData.id, { offsetX: nx, offsetY: ny });
     }
-  }, [imageData, cellWidth, cellHeight, cols, rows, cellX, cellY, r, c, visW, visH, updateImage, moveImageToCell, images]);
+  }, [imageData, cellWidth, cellHeight, cols, rows, cellX, cellY, r, c, imgW, imgH, updateImage, moveImageToCell, images]);
 
   const handleScaleEnd = useCallback(() => {
     const node = scaleRef.current;
@@ -103,8 +103,8 @@ export default function ImageGroup({
       if (!stage) return;
       const p = stage.getPointerPosition();
       if (!p) return;
-      const cx = cellX + imageData.offsetX + visW / 2;
-      const cy = cellY + imageData.offsetY + visH / 2;
+      const cx = cellX + imageData.offsetX + imgW / 2;
+      const cy = cellY + imageData.offsetY + imgH / 2;
       const ma = Math.atan2(p.y - cy, p.x - cx) * 180 / Math.PI;
       rotatingRef.current = true;
       rotating.current = true;
@@ -117,8 +117,8 @@ export default function ImageGroup({
       if (!stage) return;
       const p = stage.getPointerPosition();
       if (!p) return;
-      const cx = cellX + imageData.offsetX + visW / 2;
-      const cy = cellY + imageData.offsetY + visH / 2;
+      const cx = cellX + imageData.offsetX + imgW / 2;
+      const cy = cellY + imageData.offsetY + imgH / 2;
       const ma = Math.atan2(p.y - cy, p.x - cx) * 180 / Math.PI;
       updateImage(imageData.id, { rotation: Math.round(ma - baseAngle.current) });
     }
@@ -138,7 +138,7 @@ export default function ImageGroup({
         stage.off("mouseup.rotimg", onUp);
       }
     };
-  }, [imageData, updateImage, cellX, cellY, visW, visH]);
+  }, [imageData, updateImage, cellX, cellY, imgW, imgH]);
 
   useEffect(() => {
     if (isSelected && trRef.current && scaleRef.current) {
@@ -155,8 +155,8 @@ export default function ImageGroup({
           x={imageData.offsetX} y={imageData.offsetY}
           draggable onDragEnd={handleDragEnd}>
           <Group ref={scaleRef}
-            x={visW / 2} y={visH / 2}
-            offsetX={visW / 2} offsetY={visH / 2}
+            x={imgW / 2} y={imgH / 2}
+            offsetX={imgW / 2} offsetY={imgH / 2}
             rotation={imageData.rotation}
             scaleX={imageData.scale} scaleY={imageData.scale}
             onClick={onSelect} onTap={onSelect}
