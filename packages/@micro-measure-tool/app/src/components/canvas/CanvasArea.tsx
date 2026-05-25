@@ -35,6 +35,7 @@ export default function CanvasArea() {
   const activeToolId = useToolStore((s) => s.activeToolId);
   const addMeasurement = useMeasurementsStore((s) => s.addMeasurement);
   const measurements = useMeasurementsStore((s) => s.measurements);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     function updateSize() {
@@ -234,8 +235,17 @@ export default function CanvasArea() {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
       >
-        <GridLayer />
-        <ImageLayer />
+        <GridLayer
+          selectedCellIndex={
+            selectedId
+              ? images.find((i) => i.id === selectedId)?.cellIndex ?? null
+              : null
+          }
+        />
+        <ImageLayer
+          selectedId={selectedId}
+          onSelectImage={setSelectedId}
+        />
         <ToolPreviewLayer />
         {calibrating && (
           <Layer>

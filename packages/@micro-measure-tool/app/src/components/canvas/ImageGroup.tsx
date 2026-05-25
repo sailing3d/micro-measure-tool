@@ -1,5 +1,11 @@
 import { useRef, useCallback, useEffect } from "react";
-import { Group, Image as KonvaImage, Transformer } from "react-konva";
+import {
+  Group,
+  Image as KonvaImage,
+  Transformer,
+  Rect,
+  Text,
+} from "react-konva";
 import Konva from "konva";
 import { useGridStore } from "../../stores/gridStore";
 import { useImagesStore } from "../../stores/imagesStore";
@@ -29,6 +35,7 @@ export default function ImageGroup({
   const rows = useGridStore((s) => s.rows);
   const displayZoom = useCalibrationStore((s) => s.displayZoom);
   const updateImage = useImagesStore((s) => s.updateImage);
+  const removeImage = useImagesStore((s) => s.removeImage);
   const images = useImagesStore((s) => s.images);
   const moveImageToCell = useImagesStore((s) => s.moveImageToCell);
 
@@ -37,19 +44,32 @@ export default function ImageGroup({
   const cellX = c * cellWidth + PADDING;
   const cellY = r * cellHeight + PADDING;
 
-  const imgW = imageElement.naturalWidth * displayZoom * imageData.scale;
-  const imgH = imageElement.naturalHeight * displayZoom * imageData.scale;
+  const imgW = imageElement.naturalWidth * displayZoom;
+  const imgH = imageElement.naturalHeight * displayZoom;
+  const visualW = imgW * imageData.scale;
+  const visualH = imgH * imageData.scale;
 
-  const x = cellX + imageData.offsetX;
-  const y = cellY + imageData.offsetY;
+  const dragBoundFunc = useCallback(
+    (pos: { x: number; y: number }) => ({
+      x: Math.max(
+        -visualW * 0.7,
+        Math.min(cellWidth - visualW * 0.3, pos.x),
+      ),
+      y: Math.max(
+        -visualH * 0.7,
+        Math.min(cellHeight - visualH * 0.3, pos.y),
+      ),
+    }),
+    [visualW, visualH, cellWidth, cellHeight],
+  );
 
   const handleDragEnd = useCallback(
     (e: Konva.KonvaEventObject<DragEvent>) => {
-      const nx = e.target.x() - cellX;
-      const ny = e.target.y() - cellY;
+      const nx = Math.round(e.target.x());
+      const ny = Math.round(e.target.y());
 
-      const centerX = e.target.x() + imgW / 2;
-      const centerY = e.target.y() + imgH / 2;
+      const centerX = cellX + nx + visualW / 2;
+      const centerY = cellY + ny + visualH / 2;
 
       const newCol = Math.floor((centerX - PADDING) / cellWidth);
       const newRow = Math.floor((centerY - PADDING) / cellHeight);
@@ -66,21 +86,35 @@ export default function ImageGroup({
         }
         moveImageToCell(imageData.id, newIdx);
       } else {
-        updateImage(imageData.id, { offsetX: Math.round(nx), offsetY: Math.round(ny) });
+        updateImage(imageData.id, { offsetX: nx, offsetY: ny });
       }
     },
-    [imageData, cellWidth, cellHeight, cols, rows, cellX, cellY, imgW, imgH, updateImage, moveImageToCell, images],
+    [
+      imageData,
+      cellWidth,
+      cellHeight,
+      cols,
+      rows,
+      cellX,
+      cellY,
+      visualW,
+      visualH,
+      updateImage,
+      moveImageToCell,
+      images,
+    ],
   );
 
   const handleTransformEnd = useCallback(() => {
     const node = groupRef.current;
     if (!node) return;
-    const scale = node.scaleX();
+    const newScale = node.scaleX();
     const rot = node.rotation();
     node.scaleX(1);
     node.scaleY(1);
+    node.rotation(0);
     updateImage(imageData.id, {
-      scale: imageData.scale * scale,
+      scale: newScale,
       rotation: Math.round(rot),
     });
   }, [imageData, updateImage]);
@@ -95,26 +129,85 @@ export default function ImageGroup({
   return (
     <>
       <Group
-        ref={groupRef}
-        x={x}
-        y={y}
-        draggable
-        rotation={imageData.rotation}
-        scaleX={imageData.scale}
-        scaleY={imageData.scale}
-        onClick={onSelect}
-        onTap={onSelect}
-        onDragEnd={handleDragEnd}
-        onTransformEnd={handleTransformEnd}
+        x={cellX}
+        y={cellY}
+        clipX={0}
+        clipY={0}
+        clipWidth={cellWidth}
+        clipHeight={cellHeight}
       >
-        <KonvaImage
-          image={imageElement}
-          width={imageElement.naturalWidth * displayZoom}
-          height={imageElement.naturalHeight * displayZoom}
-        />
+        <Group
+          ref={groupRef}
+          x={imageData.offsetX}
+          y={imageData.offsetY}
+          draggable
+          dragBoundFunc={dragBoundFunc}
+          rotation={imageData.rotation}
+          scaleX={imageData.scale}
+          scaleY={imageData.scale}
+          onClick={onSelect}
+          onTap={onSelect}
+          onDragEnd={handleDragEnd}
+          onTransformEnd={handleTransformEnd}
+        >
+          <KonvaImage image={imageElement} width={imgW} height={imgH} />
+        </Group>
       </Group>
+
       {isSelected && (
-        <Transformer ref={trRef} />
+        <>
+          <Transformer ref={trRef} />
+          <Rect
+            x={cellX + cellWidth - 48}
+            y={cellY + 2}
+            width={22}
+            height={18}
+            fill="#ef4444"
+            cornerRadius={3}
+            onClick={() => removeImage(imageData.id)}
+            onTap={() => removeImage(imageData.id)}
+          />
+          <Text
+            x={cellX + cellWidth - 46}
+            y={cellY + 4}
+            text="x"
+            fontSize={10}
+            fill="#fff"
+            listening={false}
+          />
+          <Rect
+            x={cellX + cellWidth - 24}
+            y={cellY + 2}
+            width={22}
+            height={18}
+            fill="#4b5563"
+            cornerRadius={3}
+            onClick={() =>
+              updateImage(imageData.id, {
+                offsetX: 0,
+                offsetY: 0,
+                rotation: 0,
+                scale: 1,
+              })
+            }
+            onTap={() =>
+              updateImage(imageData.id, {
+                offsetX: 0,
+                offsetY: 0,
+                rotation: 0,
+                scale: 1,
+              })
+            }
+          />
+          <Text
+            x={cellX + cellWidth - 22}
+            y={cellY + 4}
+            text="0"
+            fontSize={10}
+            fill="#fff"
+            listening={false}
+          />
+        </>
       )}
     </>
   );

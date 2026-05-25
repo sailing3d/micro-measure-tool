@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useRef } from "react";
 import { Layer, Line, Circle } from "react-konva";
 import { useImagesStore } from "../../stores/imagesStore";
 import { useCalibrationStore } from "../../stores/calibrationStore";
@@ -51,18 +51,22 @@ function renderMeasurement(m: MeasurementData) {
   return null;
 }
 
-export default function ImageLayer() {
+interface Props {
+  selectedId: string | null;
+  onSelectImage: (id: string | null) => void;
+}
+
+export default function ImageLayer({ selectedId, onSelectImage }: Props) {
   const images = useImagesStore((s) => s.images);
   const measurements = useMeasurementsStore((s) => s.measurements);
   const displayZoom = useCalibrationStore((s) => s.displayZoom);
   const setDisplayZoom = useCalibrationStore((s) => s.setDisplayZoom);
   const cellWidth = useGridStore((s) => s.cellWidth);
   const cellHeight = useGridStore((s) => s.cellHeight);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const imageMapRef = useRef<Map<string, HTMLImageElement>>(new Map());
-  const prevZoom = useRef(displayZoom);
   const knownIdsRef = useRef(new Set<string>());
+  const prevZoom = useRef(displayZoom);
 
   const currentMap = imageMapRef.current;
 
@@ -102,7 +106,7 @@ export default function ImageLayer() {
             imageElement={el}
             isSelected={selectedId === img.id}
             onSelect={() =>
-              setSelectedId((prev) => (prev === img.id ? null : img.id))
+              onSelectImage(selectedId === img.id ? null : img.id)
             }
           />
         );

@@ -2,10 +2,15 @@ import { Layer, Rect, Text, Group } from "react-konva";
 import { useGridStore } from "../../stores/gridStore";
 
 const GRID_COLOR = "#334155";
+const HIGHLIGHT_COLOR = "#1e40af";
 const GRID_STROKE = 1;
 const PADDING = 20;
 
-export default function GridLayer() {
+interface Props {
+  selectedCellIndex: number | null;
+}
+
+export default function GridLayer({ selectedCellIndex }: Props) {
   const rows = useGridStore((s) => s.rows);
   const cols = useGridStore((s) => s.cols);
   const cellWidth = useGridStore((s) => s.cellWidth);
@@ -17,15 +22,27 @@ export default function GridLayer() {
       const x = c * cellWidth + PADDING;
       const y = r * cellHeight + PADDING;
       const idx = r * cols + c;
+      const isHighlighted = selectedCellIndex === idx;
+
       cells.push(
         <Group key={idx}>
+          {isHighlighted && (
+            <Rect
+              x={x}
+              y={y}
+              width={cellWidth}
+              height={cellHeight}
+              fill="#1e3a5f"
+              opacity={0.5}
+            />
+          )}
           <Rect
             x={x}
             y={y}
             width={cellWidth}
             height={cellHeight}
-            stroke={GRID_COLOR}
-            strokeWidth={GRID_STROKE}
+            stroke={isHighlighted ? HIGHLIGHT_COLOR : GRID_COLOR}
+            strokeWidth={isHighlighted ? 2 : GRID_STROKE}
           />
           <Text
             x={x + 4}
@@ -44,13 +61,7 @@ export default function GridLayer() {
 
   return (
     <Layer>
-      <Rect
-        x={0}
-        y={0}
-        width={totalW}
-        height={totalH}
-        fill="#0f172a"
-      />
+      <Rect x={0} y={0} width={totalW} height={totalH} fill="#0f172a" />
       {cells}
     </Layer>
   );
