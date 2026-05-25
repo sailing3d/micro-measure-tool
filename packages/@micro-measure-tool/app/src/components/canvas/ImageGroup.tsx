@@ -10,6 +10,7 @@ import Konva from "konva";
 import { useGridStore } from "../../stores/gridStore";
 import { useImagesStore } from "../../stores/imagesStore";
 import { useCalibrationStore } from "../../stores/calibrationStore";
+import { rotatingRef } from "./rotationState";
 import type { ImageData } from "../../types";
 
 const PADDING = 20;
@@ -38,7 +39,7 @@ export default function ImageGroup({
   const moveImageToCell = useImagesStore((s) => s.moveImageToCell);
 
   const posRef = useRef<Konva.Group>(null);
-  const transRef = useRef<Konva.Group>(null);
+  const scaleRef = useRef<Konva.Group>(null);
   const trRef = useRef<Konva.Transformer>(null);
 
   const r = Math.floor(imageData.cellIndex / cols);
@@ -48,128 +49,118 @@ export default function ImageGroup({
 
   const imgW = imageElement.naturalWidth * displayZoom;
   const imgH = imageElement.naturalHeight * displayZoom;
-  const visualW = imgW * imageData.scale;
-  const visualH = imgH * imageData.scale;
+  const visW = imgW * imageData.scale;
+  const visH = imgH * imageData.scale;
 
   const handleDragEnd = useCallback(() => {
     const pos = posRef.current;
     if (!pos) return;
+    const nx = Math.round(pos.x());
+    const ny = Math.round(pos.y());
+    const cx = cellX + nx + visW / 2;
+    const cy = cellY + ny + visH / 2;
+    const nc = Math.floor((cx - PADDING) / cellWidth);
+    const nr = Math.floor((cy - PADDING) / cellHeight);
+    const ni = nr * cols + nc;
 
-    const newRelX = Math.round(pos.x());
-    const newRelY = Math.round(pos.y());
-
-    const centerX = cellX + newRelX + visualW / 2;
-    const centerY = cellY + newRelY + visualH / 2;
-
-    const newCol = Math.floor((centerX - PADDING) / cellWidth);
-    const newRow = Math.floor((centerY - PADDING) / cellHeight);
-    const newIdx = newRow * cols + newCol;
-
-    if (
-      newIdx >= 0 &&
-      newIdx < rows * cols &&
-      newIdx !== imageData.cellIndex
-    ) {
-      const targetImg = images.find((i) => i.cellIndex === newIdx);
-      if (targetImg) {
-        const tR = Math.floor(targetImg.cellIndex / cols);
-        const tC = targetImg.cellIndex % cols;
-        moveImageToCell(
-          targetImg.id,
-          imageData.cellIndex,
-          targetImg.offsetX - tC * cellWidth + c * cellWidth,
-          targetImg.offsetY - tR * cellHeight + r * cellHeight,
-        );
+    if (ni >= 0 && ni < rows * cols && ni !== imageData.cellIndex) {
+      const tgt = images.find((i) => i.cellIndex === ni);
+      if (tgt) {
+        const tr = Math.floor(tgt.cellIndex / cols);
+        const tc = tgt.cellIndex % cols;
+        moveImageToCell(tgt.id, imageData.cellIndex,
+          tgt.offsetX - tc * cellWidth + c * cellWidth,
+          tgt.offsetY - tr * cellHeight + r * cellHeight);
       }
-      const newCellNX = newCol * cellWidth + PADDING;
-      const newCellNY = newRow * cellHeight + PADDING;
-      moveImageToCell(
-        imageData.id,
-        newIdx,
-        Math.round(newRelX + cellX - newCellNX),
-        Math.round(newRelY + cellY - newCellNY),
-      );
+      const ncx = nc * cellWidth + PADDING;
+      const ncy = nr * cellHeight + PADDING;
+      moveImageToCell(imageData.id, ni,
+        Math.round(nx + cellX - ncx),
+        Math.round(ny + cellY - ncy));
     } else {
-      updateImage(imageData.id, {
-        offsetX: newRelX,
-        offsetY: newRelY,
-      });
+      updateImage(imageData.id, { offsetX: nx, offsetY: ny });
     }
-  }, [
-    imageData,
-    cellWidth,
-    cellHeight,
-    cols,
-    rows,
-    cellX,
-    cellY,
-    r,
-    c,
-    visualW,
-    visualH,
-    updateImage,
-    moveImageToCell,
-    images,
-  ]);
+  }, [imageData, cellWidth, cellHeight, cols, rows, cellX, cellY, r, c, visW, visH, updateImage, moveImageToCell, images]);
 
-  const handleTransformEnd = useCallback(() => {
-    const node = transRef.current;
+  const handleScaleEnd = useCallback(() => {
+    const node = scaleRef.current;
     if (!node) return;
-
-    const finalScale = node.scaleX();
-    const finalRot = node.rotation();
-
-    node.scaleX(1);
-    node.scaleY(1);
-    node.rotation(0);
-
-    const scaleChanged = Math.abs(finalScale - imageData.scale) > 0.0001;
-
-    updateImage(imageData.id, {
-      scale: finalScale,
-      rotation: scaleChanged
-        ? imageData.rotation
-        : Math.round(finalRot),
-    });
+    const s = node.scaleX();
+    updateImage(imageData.id, { scale: s });
   }, [imageData, updateImage]);
 
+  const rotating = useRef(false);
+  const baseAngle = useRef(0);
+
   useEffect(() => {
-    if (isSelected && trRef.current && transRef.current) {
-      trRef.current.nodes([transRef.current]);
+    const node = posRef.current;
+    if (!node) return;
+
+    function onDown(e: Konva.KonvaEventObject<MouseEvent>) {
+      if (e.evt.button !== 2) return;
+      e.evt.preventDefault();
+      const stage = node?.getStage();
+      if (!stage) return;
+      const p = stage.getPointerPosition();
+      if (!p) return;
+      const cx = cellX + imageData.offsetX + visW / 2;
+      const cy = cellY + imageData.offsetY + visH / 2;
+      const ma = Math.atan2(p.y - cy, p.x - cx) * 180 / Math.PI;
+      rotatingRef.current = true;
+      rotating.current = true;
+      baseAngle.current = ma - imageData.rotation;
+    }
+
+    function onMove() {
+      if (!rotating.current) return;
+      const stage = node?.getStage();
+      if (!stage) return;
+      const p = stage.getPointerPosition();
+      if (!p) return;
+      const cx = cellX + imageData.offsetX + visW / 2;
+      const cy = cellY + imageData.offsetY + visH / 2;
+      const ma = Math.atan2(p.y - cy, p.x - cx) * 180 / Math.PI;
+      updateImage(imageData.id, { rotation: Math.round(ma - baseAngle.current) });
+    }
+
+    function onUp() { rotating.current = false; rotatingRef.current = false; }
+
+    node.on("mousedown.rotimg", onDown);
+    const stage = node.getStage();
+    if (stage) {
+      stage.on("mousemove.rotimg", onMove);
+      stage.on("mouseup.rotimg", onUp);
+    }
+    return () => {
+      node.off("mousedown.rotimg");
+      if (stage) {
+        stage.off("mousemove.rotimg", onMove);
+        stage.off("mouseup.rotimg", onUp);
+      }
+    };
+  }, [imageData, updateImage, cellX, cellY, visW, visH]);
+
+  useEffect(() => {
+    if (isSelected && trRef.current && scaleRef.current) {
+      trRef.current.nodes([scaleRef.current]);
       trRef.current.getLayer()?.batchDraw();
     }
   }, [isSelected]);
 
   return (
     <>
-      <Group
-        x={cellX}
-        y={cellY}
-        clipX={0}
-        clipY={0}
-        clipWidth={cellWidth}
-        clipHeight={cellHeight}
-      >
-        <Group
-          ref={posRef}
-          x={imageData.offsetX}
-          y={imageData.offsetY}
-          draggable
-          onDragEnd={handleDragEnd}
-        >
-          <Group
-            ref={transRef}
-            x={visualW / 2}
-            y={visualH / 2}
-            offsetX={visualW / 2}
-            offsetY={visualH / 2}
-            scaleX={imageData.scale}
-            scaleY={imageData.scale}
+      <Group x={cellX} y={cellY}
+        clipX={0} clipY={0} clipWidth={cellWidth} clipHeight={cellHeight}>
+        <Group ref={posRef}
+          x={imageData.offsetX} y={imageData.offsetY}
+          draggable onDragEnd={handleDragEnd}>
+          <Group ref={scaleRef}
+            x={visW / 2} y={visH / 2}
+            offsetX={visW / 2} offsetY={visH / 2}
             rotation={imageData.rotation}
-            onClick={onSelect}
-            onTap={onSelect}
-            onTransformEnd={handleTransformEnd}
-          >
+            scaleX={imageData.scale} scaleY={imageData.scale}
+            onClick={onSelect} onTap={onSelect}
+            onTransformEnd={handleScaleEnd}>
             <KonvaImage image={imageElement} width={imgW} height={imgH} />
           </Group>
         </Group>
@@ -177,65 +168,27 @@ export default function ImageGroup({
 
       {isSelected && (
         <>
-          <Transformer
-            ref={trRef}
+          <Transformer ref={trRef} rotateEnabled={false}
             boundBoxFunc={(_oldBox, newBox) => {
-              if (visualW <= 0 || visualH <= 0) return newBox;
-              const ratio = visualW / visualH;
+              if (visW <= 0 || visH <= 0) return newBox;
+              const ratio = visW / visH;
               const w = Math.max(20, newBox.width);
               return { ...newBox, width: w, height: w / ratio };
-            }}
-          />
-          <Rect
-            x={cellX + cellWidth - 48}
-            y={cellY + 2}
-            width={22}
-            height={18}
-            fill="#ef4444"
-            cornerRadius={3}
+            }} />
+          <Rect x={cellX + cellWidth - 48} y={cellY + 2}
+            width={22} height={18} fill="#ef4444" cornerRadius={3}
             onClick={() => removeImage(imageData.id)}
-            onTap={() => removeImage(imageData.id)}
-          />
-          <Text
-            x={cellX + cellWidth - 46}
-            y={cellY + 4}
-            text="x"
-            fontSize={10}
-            fill="#fff"
-            listening={false}
-          />
-          <Rect
-            x={cellX + cellWidth - 24}
-            y={cellY + 2}
-            width={22}
-            height={18}
-            fill="#4b5563"
-            cornerRadius={3}
-            onClick={() =>
-              updateImage(imageData.id, {
-                offsetX: 0,
-                offsetY: 0,
-                rotation: 0,
-                scale: 1,
-              })
-            }
-            onTap={() =>
-              updateImage(imageData.id, {
-                offsetX: 0,
-                offsetY: 0,
-                rotation: 0,
-                scale: 1,
-              })
-            }
-          />
-          <Text
-            x={cellX + cellWidth - 22}
-            y={cellY + 4}
-            text="0"
-            fontSize={10}
-            fill="#fff"
-            listening={false}
-          />
+            onTap={() => removeImage(imageData.id)} />
+          <Text x={cellX + cellWidth - 46} y={cellY + 4}
+            text="x" fontSize={10} fill="#fff" listening={false} />
+          <Rect x={cellX + cellWidth - 24} y={cellY + 2}
+            width={22} height={18} fill="#4b5563" cornerRadius={3}
+            onClick={() => updateImage(imageData.id,
+              { offsetX: 0, offsetY: 0, rotation: 0, scale: 1 })}
+            onTap={() => updateImage(imageData.id,
+              { offsetX: 0, offsetY: 0, rotation: 0, scale: 1 })} />
+          <Text x={cellX + cellWidth - 22} y={cellY + 4}
+            text="0" fontSize={10} fill="#fff" listening={false} />
         </>
       )}
     </>

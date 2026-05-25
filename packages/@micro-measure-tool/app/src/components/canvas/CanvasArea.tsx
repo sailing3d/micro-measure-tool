@@ -11,6 +11,7 @@ import { copyImageToProject } from "../../services/projectService";
 import GridLayer from "./GridLayer";
 import ImageLayer from "./ImageLayer";
 import ToolPreviewLayer from "./ToolPreviewLayer";
+import { rotatingRef } from "./rotationState";
 import type { Point } from "../../types";
 
 const PADDING = 20;
@@ -86,6 +87,7 @@ export default function CanvasArea() {
     (e: Konva.KonvaEventObject<MouseEvent>) => {
       if (e.evt.button === 2) {
         e.evt.preventDefault();
+        if (rotatingRef.current) return;
         isPanning.current = true;
         panStart.current = { x: e.evt.clientX, y: e.evt.clientY, panX, panY };
         return;
