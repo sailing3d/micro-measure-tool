@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createProject, openProject, listProjects } from "../../services/projectService";
+import { createProject, openProject, listProjects, readImageAsBlobUrl } from "../../services/projectService";
 import { useProjectStore } from "../../stores/projectStore";
 import { useGridStore } from "../../stores/gridStore";
 import { useCalibrationStore } from "../../stores/calibrationStore";
@@ -62,10 +62,14 @@ export default function StartupDialog({ onProjectOpened }: Props) {
       setGrid.setCellHeight(data.grid.cellHeight);
       setCalibration.setRatio(data.calibration.ratio);
       setCalibration.setDisplayZoom(data.displayZoom);
-      setImages(data.images.map((img) => ({
-        ...img,
-        filepath: img.filename,
-      })));
+
+      const imgsWithUrls = await Promise.all(
+        data.images.map(async (img) => {
+          const filepath = await readImageAsBlobUrl(img.filename, handle);
+          return { ...img, filepath };
+        }),
+      );
+      setImages(imgsWithUrls);
       const allMeasurements = data.images.flatMap((img) => img.measurements);
       setMeasurements(allMeasurements);
       onProjectOpened();

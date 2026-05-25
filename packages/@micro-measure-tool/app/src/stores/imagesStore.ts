@@ -14,7 +14,13 @@ export const useImagesStore = create<ImagesState>()((set) => ({
   images: [],
   addImage: (img) => set((s) => ({ images: [...s.images, img] })),
   removeImage: (id) =>
-    set((s) => ({ images: s.images.filter((i) => i.id !== id) })),
+    set((s) => {
+      const img = s.images.find((i) => i.id === id);
+      if (img?.filepath.startsWith("blob:")) {
+        URL.revokeObjectURL(img.filepath);
+      }
+      return { images: s.images.filter((i) => i.id !== id) };
+    }),
   updateImage: (id, patch) =>
     set((s) => ({
       images: s.images.map((i) => (i.id === id ? { ...i, ...patch } : i)),
@@ -25,5 +31,13 @@ export const useImagesStore = create<ImagesState>()((set) => ({
         i.id === id ? { ...i, cellIndex, offsetX: 0, offsetY: 0 } : i,
       ),
     })),
-  setImages: (images) => set({ images }),
+  setImages: (images) =>
+    set((s) => {
+      for (const img of s.images) {
+        if (img.filepath.startsWith("blob:")) {
+          URL.revokeObjectURL(img.filepath);
+        }
+      }
+      return { images };
+    }),
 }));

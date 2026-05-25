@@ -28,8 +28,8 @@ function toProjectData(data: {
       cols: data.grid.cols,
       cellWidth: data.grid.cellWidth,
       cellHeight: data.grid.cellHeight,
-      panX: 0,
-      panY: 0,
+      panX: data.grid.panX,
+      panY: data.grid.panY,
     },
     calibration: { ratio: data.calibration.ratio, displayZoom: data.calibration.displayZoom },
     displayZoom: data.calibration.displayZoom,
@@ -121,6 +121,15 @@ export async function copyImageToProject(
   await writable.write(buffer);
   await writable.close();
   return filename;
+}
+
+export async function readImageAsBlobUrl(
+  filename: string,
+  folderHandle: FileSystemDirectoryHandle,
+): Promise<string> {
+  const fileHandle = await folderHandle.getFileHandle(filename);
+  const file = await fileHandle.getFile();
+  return URL.createObjectURL(file);
 }
 
 export function listProjects(): { name: string; path: string }[] {

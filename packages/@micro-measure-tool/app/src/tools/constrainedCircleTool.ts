@@ -18,8 +18,6 @@ export class ConstrainedCircleTool implements MeasurementTool {
       this.trajectoryStart = point;
       this.trajectoryEnd = point;
       this.phase = "trajectory";
-    } else if (this.phase === "adjust") {
-      this.phase = "idle";
     }
   }
 

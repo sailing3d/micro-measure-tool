@@ -148,6 +148,7 @@ export default function CanvasArea() {
       const { x1, y1, x2, y2 } = calLineRef.current;
       const dx = x2 - x1;
       const dy = y2 - y1;
+      if (!displayZoom || dx === 0 && dy === 0) return;
       const pxLen = Math.sqrt(dx * dx + dy * dy) / displayZoom;
       const um = parseFloat(
         prompt(`线段像素长度: ${pxLen.toFixed(2)} px\n请输入实际微米长度:`) || "",
