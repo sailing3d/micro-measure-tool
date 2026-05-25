@@ -13,7 +13,6 @@ import { useCalibrationStore } from "../../stores/calibrationStore";
 import type { ImageData } from "../../types";
 
 const PADDING = 20;
-const ROT_THRESHOLD = 3;
 
 interface Props {
   imageData: ImageData;
@@ -52,88 +51,85 @@ export default function ImageGroup({
   const visualW = imgW * imageData.scale;
   const visualH = imgH * imageData.scale;
 
-  const savedRot = useRef(imageData.rotation);
-  savedRot.current = imageData.rotation;
+  const handleDragEnd = useCallback(() => {
+    const pos = posRef.current;
+    if (!pos) return;
 
-  const handleDragEnd = useCallback(
-    () => {
-      const pos = posRef.current;
-      if (!pos) return;
+    const newRelX = Math.round(pos.x());
+    const newRelY = Math.round(pos.y());
 
-      const newRelX = Math.round(pos.x());
-      const newRelY = Math.round(pos.y());
+    const centerX = cellX + newRelX + visualW / 2;
+    const centerY = cellY + newRelY + visualH / 2;
 
-      const centerX = cellX + newRelX + visualW / 2;
-      const centerY = cellY + newRelY + visualH / 2;
+    const newCol = Math.floor((centerX - PADDING) / cellWidth);
+    const newRow = Math.floor((centerY - PADDING) / cellHeight);
+    const newIdx = newRow * cols + newCol;
 
-      const newCol = Math.floor((centerX - PADDING) / cellWidth);
-      const newRow = Math.floor((centerY - PADDING) / cellHeight);
-      const newIdx = newRow * cols + newCol;
-
-      if (
-        newIdx >= 0 &&
-        newIdx < rows * cols &&
-        newIdx !== imageData.cellIndex
-      ) {
-        const targetImg = images.find((i) => i.cellIndex === newIdx);
-        if (targetImg) {
-          const tR = Math.floor(targetImg.cellIndex / cols);
-          const tC = targetImg.cellIndex % cols;
-          moveImageToCell(
-            targetImg.id,
-            imageData.cellIndex,
-            targetImg.offsetX - c * cellWidth + tC * cellWidth,
-            targetImg.offsetY - r * cellHeight + tR * cellHeight,
-          );
-        }
-        const newCellNX = newCol * cellWidth + PADDING;
-        const newCellNY = newRow * cellHeight + PADDING;
-        const newRelX2 = Math.round(newRelX + cellX - newCellNX);
-        const newRelY2 = Math.round(newRelY + cellY - newCellNY);
-        moveImageToCell(imageData.id, newIdx, newRelX2, newRelY2);
-      } else {
-        updateImage(imageData.id, {
-          offsetX: newRelX,
-          offsetY: newRelY,
-        });
+    if (
+      newIdx >= 0 &&
+      newIdx < rows * cols &&
+      newIdx !== imageData.cellIndex
+    ) {
+      const targetImg = images.find((i) => i.cellIndex === newIdx);
+      if (targetImg) {
+        const tR = Math.floor(targetImg.cellIndex / cols);
+        const tC = targetImg.cellIndex % cols;
+        moveImageToCell(
+          targetImg.id,
+          imageData.cellIndex,
+          targetImg.offsetX - tC * cellWidth + c * cellWidth,
+          targetImg.offsetY - tR * cellHeight + r * cellHeight,
+        );
       }
-    },
-    [
-      imageData,
-      cellWidth,
-      cellHeight,
-      cols,
-      rows,
-      cellX,
-      cellY,
-      r,
-      c,
-      visualW,
-      visualH,
-      updateImage,
-      moveImageToCell,
-      images,
-    ],
-  );
+      const newCellNX = newCol * cellWidth + PADDING;
+      const newCellNY = newRow * cellHeight + PADDING;
+      moveImageToCell(
+        imageData.id,
+        newIdx,
+        Math.round(newRelX + cellX - newCellNX),
+        Math.round(newRelY + cellY - newCellNY),
+      );
+    } else {
+      updateImage(imageData.id, {
+        offsetX: newRelX,
+        offsetY: newRelY,
+      });
+    }
+  }, [
+    imageData,
+    cellWidth,
+    cellHeight,
+    cols,
+    rows,
+    cellX,
+    cellY,
+    r,
+    c,
+    visualW,
+    visualH,
+    updateImage,
+    moveImageToCell,
+    images,
+  ]);
 
   const handleTransformEnd = useCallback(() => {
     const node = transRef.current;
     if (!node) return;
 
     const finalScale = node.scaleX();
-    const currentRot = node.rotation();
-    const rotDelta = Math.abs(currentRot - savedRot.current);
+    const finalRot = node.rotation();
 
     node.scaleX(1);
     node.scaleY(1);
     node.rotation(0);
 
+    const scaleChanged = Math.abs(finalScale - imageData.scale) > 0.0001;
+
     updateImage(imageData.id, {
       scale: finalScale,
-      rotation:
-        rotDelta > ROT_THRESHOLD
-          ? Math.round(currentRot)
-          : imageData.rotation,
+      rotation: scaleChanged
+        ? imageData.rotation
+        : Math.round(finalRot),
     });
   }, [imageData, updateImage]);
 
@@ -142,14 +138,7 @@ export default function ImageGroup({
       trRef.current.nodes([transRef.current]);
       trRef.current.getLayer()?.batchDraw();
     }
-  }, [isSelected, imageData.scale, imageData.rotation]);
-
-  const handleSelect = useCallback(
-    () => {
-      onSelect();
-    },
-    [onSelect],
-  );
+  }, [isSelected]);
 
   return (
     <>
@@ -177,8 +166,8 @@ export default function ImageGroup({
             scaleX={imageData.scale}
             scaleY={imageData.scale}
             rotation={imageData.rotation}
-            onClick={handleSelect}
-            onTap={handleSelect}
+            onClick={onSelect}
+            onTap={onSelect}
             onTransformEnd={handleTransformEnd}
           >
             <KonvaImage image={imageElement} width={imgW} height={imgH} />
