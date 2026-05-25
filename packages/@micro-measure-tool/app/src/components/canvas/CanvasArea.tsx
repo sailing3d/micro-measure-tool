@@ -4,9 +4,14 @@ import Konva from "konva";
 import { useGridStore } from "../../stores/gridStore";
 import { useImagesStore } from "../../stores/imagesStore";
 import { useCalibrationStore } from "../../stores/calibrationStore";
+import { useToolStore } from "../../stores/toolStore";
+import { useMeasurementsStore } from "../../stores/measurementsStore";
+import { getTool } from "../../tools/registry";
 import { copyImageToProject } from "../../services/projectService";
 import GridLayer from "./GridLayer";
 import ImageLayer from "./ImageLayer";
+import ToolPreviewLayer from "./ToolPreviewLayer";
+import type { Point } from "../../types";
 
 const PADDING = 20;
 
@@ -27,7 +32,11 @@ export default function CanvasArea() {
   const images = useImagesStore((s) => s.images);
   const calibrating = useCalibrationStore((s) => s.calibrating);
   const displayZoom = useCalibrationStore((s) => s.displayZoom);
+  const ratio = useCalibrationStore((s) => s.ratio);
   const finishCalibrating = useCalibrationStore((s) => s.finishCalibrating);
+  const activeToolId = useToolStore((s) => s.activeToolId);
+  const addMeasurement = useMeasurementsStore((s) => s.addMeasurement);
+  const measurements = useMeasurementsStore((s) => s.measurements);
 
   useEffect(() => {
     function updateSize() {
@@ -50,6 +59,29 @@ export default function CanvasArea() {
   const calLineRef = useRef({ x1: 0, y1: 0, x2: 0, y2: 0 });
   const [, calForce] = useState(0);
 
+  const [, toolForce] = useState(0);
+
+  const findImageAtPoint = useCallback(
+    (stagePoint: Point): string | null => {
+      for (const img of images) {
+        const r = Math.floor(img.cellIndex / cols);
+        const c = img.cellIndex % cols;
+        const cx = c * cellWidth + PADDING + img.offsetX;
+        const cy = r * cellHeight + PADDING + img.offsetY;
+        if (
+          stagePoint.x >= cx &&
+          stagePoint.x <= cx + cellWidth * displayZoom * img.scale &&
+          stagePoint.y >= cy &&
+          stagePoint.y <= cy + cellHeight * displayZoom * img.scale
+        ) {
+          return img.id;
+        }
+      }
+      return null;
+    },
+    [images, cols, cellWidth, cellHeight, displayZoom],
+  );
+
   const handleMouseDown = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
       if (e.evt.button === 2) {
@@ -64,9 +96,19 @@ export default function CanvasArea() {
         calDrawing.current = true;
         calLineRef.current = { x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y };
         calForce((n) => n + 1);
+        return;
+      }
+      if (e.evt.button === 0 && activeToolId) {
+        const pos = stageRef.current?.getPointerPosition();
+        if (!pos) return;
+        const tool = getTool(activeToolId);
+        if (!tool) return;
+        const imageId = findImageAtPoint(pos);
+        tool.onPointerDown(pos, imageId);
+        toolForce((n) => n + 1);
       }
     },
-    [panX, panY, calibrating],
+    [panX, panY, calibrating, activeToolId, findImageAtPoint],
   );
 
   const handleMouseMove = useCallback(
@@ -80,15 +122,20 @@ export default function CanvasArea() {
       if (calDrawing.current && calibrating) {
         const pos = stageRef.current?.getPointerPosition();
         if (!pos) return;
-        calLineRef.current = {
-          ...calLineRef.current,
-          x2: pos.x,
-          y2: pos.y,
-        };
+        calLineRef.current = { ...calLineRef.current, x2: pos.x, y2: pos.y };
         calForce((n) => n + 1);
+        return;
+      }
+      if (activeToolId) {
+        const pos = stageRef.current?.getPointerPosition();
+        if (!pos) return;
+        const tool = getTool(activeToolId);
+        if (!tool) return;
+        tool.onPointerMove(pos);
+        toolForce((n) => n + 1);
       }
     },
-    [setPan, calibrating],
+    [setPan, calibrating, activeToolId],
   );
 
   const handleMouseUp = useCallback(() => {
@@ -105,11 +152,24 @@ export default function CanvasArea() {
       const um = parseFloat(
         prompt(`线段像素长度: ${pxLen.toFixed(2)} px\n请输入实际微米长度:`) || "",
       );
-      if (um > 0) {
-        finishCalibrating(um / pxLen);
-      }
+      if (um > 0) finishCalibrating(um / pxLen);
+      return;
     }
-  }, [calibrating, displayZoom, finishCalibrating]);
+    if (activeToolId) {
+      const pos = stageRef.current?.getPointerPosition();
+      if (!pos) return;
+      const tool = getTool(activeToolId);
+      if (!tool) return;
+      const result = tool.onPointerUp(pos);
+      if (result) {
+        const imageId = findImageAtPoint(pos) || "";
+        const count = measurements.filter((m) => m.imageId === imageId).length;
+        const calibrated = calibrateMeasurement(result, imageId, count + 1, ratio);
+        addMeasurement(calibrated);
+      }
+      toolForce((n) => n + 1);
+    }
+  }, [calibrating, displayZoom, finishCalibrating, activeToolId, ratio, measurements, addMeasurement, findImageAtPoint]);
 
   const handleDrop = useCallback(
     async (e: React.DragEvent) => {
@@ -123,9 +183,7 @@ export default function CanvasArea() {
       const col = Math.floor((stageX - PADDING) / cellWidth);
       const row = Math.floor((stageY - PADDING) / cellHeight);
       const cellIdx =
-        col >= 0 && col < cols && row >= 0 && row < rows
-          ? row * cols + col
-          : -1;
+        col >= 0 && col < cols && row >= 0 && row < rows ? row * cols + col : -1;
 
       if (cellIdx < 0) return;
 
@@ -133,8 +191,7 @@ export default function CanvasArea() {
       if (occupied) return;
 
       const file = files[0];
-      const folderHandle = (await import("../../services/projectService"))
-        .currentFolderHandle;
+      const folderHandle = (await import("../../services/projectService")).currentFolderHandle;
       if (!folderHandle) return;
 
       const filename = await copyImageToProject(file, folderHandle);
@@ -158,7 +215,7 @@ export default function CanvasArea() {
     e.preventDefault();
   }, []);
 
-  const calline = calLineRef.current;
+  const calLine = calLineRef.current;
 
   return (
     <div
@@ -180,10 +237,11 @@ export default function CanvasArea() {
       >
         <GridLayer />
         <ImageLayer />
+        <ToolPreviewLayer />
         {calibrating && (
           <Layer>
             <Line
-              points={[calline.x1, calline.y1, calline.x2, calline.y2]}
+              points={[calLine.x1, calLine.y1, calLine.x2, calLine.y2]}
               stroke="#3b82f6"
               strokeWidth={2}
               dash={[6, 3]}
@@ -193,4 +251,27 @@ export default function CanvasArea() {
       </Stage>
     </div>
   );
+}
+
+function calibrateMeasurement(
+  data: import("../../types").MeasurementData,
+  imageId: string,
+  seq: number,
+  ratio: number,
+): import("../../types").MeasurementData {
+  const result = { ...data, imageId, name: `测量 ${seq}` };
+
+  if (data.type === "h-line" && "lengthPx" in data.data) {
+    result.data = {
+      ...data.data,
+      lengthUm: data.data.lengthPx * ratio,
+    };
+  } else if (data.type === "constrained-circle" && "radiusPx" in data.data) {
+    result.data = {
+      ...data.data,
+      diameterUm: data.data.radiusPx * 2 * ratio,
+    };
+  }
+
+  return result;
 }

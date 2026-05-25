@@ -1,5 +1,6 @@
 import GridControls from "./GridControls";
 import CalibrationControls from "./CalibrationControls";
+import ToolSelector from "./ToolSelector";
 
 export default function Toolbar() {
   return (
@@ -9,6 +10,8 @@ export default function Toolbar() {
       <GridControls />
       <div className="h-5 w-px bg-gray-700" />
       <CalibrationControls />
+      <div className="h-5 w-px bg-gray-700" />
+      <ToolSelector />
     </div>
   );
 }

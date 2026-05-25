@@ -1,0 +1,28 @@
+import { useToolStore } from "../../stores/toolStore";
+import { getTools } from "../../tools/registry";
+
+export default function ToolSelector() {
+  const activeToolId = useToolStore((s) => s.activeToolId);
+  const selectTool = useToolStore((s) => s.selectTool);
+  const tools = getTools();
+
+  return (
+    <div className="flex items-center gap-1 text-xs">
+      {tools.map((tool) => (
+        <button
+          key={tool.id}
+          className={`rounded px-2 py-0.5 ${
+            activeToolId === tool.id
+              ? "bg-blue-600 text-gray-100"
+              : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+          }`}
+          onClick={() =>
+            selectTool(activeToolId === tool.id ? null : tool.id)
+          }
+        >
+          {tool.name}
+        </button>
+      ))}
+    </div>
+  );
+}
