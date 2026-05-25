@@ -8,9 +8,10 @@ const PADDING = 20;
 
 interface Props {
   selectedCellIndex: number | null;
+  dragTargetCellIndex?: number | null;
 }
 
-export default function GridLayer({ selectedCellIndex }: Props) {
+export default function GridLayer({ selectedCellIndex, dragTargetCellIndex = null }: Props) {
   const rows = useGridStore((s) => s.rows);
   const cols = useGridStore((s) => s.cols);
   const cellWidth = useGridStore((s) => s.cellWidth);
@@ -22,7 +23,9 @@ export default function GridLayer({ selectedCellIndex }: Props) {
       const x = c * cellWidth + PADDING;
       const y = r * cellHeight + PADDING;
       const idx = r * cols + c;
-      const isHighlighted = selectedCellIndex === idx;
+      const isDragTarget = dragTargetCellIndex === idx;
+      const isSelected = selectedCellIndex === idx;
+      const isHighlighted = isDragTarget || isSelected;
 
       cells.push(
         <Group key={idx}>
@@ -32,8 +35,8 @@ export default function GridLayer({ selectedCellIndex }: Props) {
               y={y}
               width={cellWidth}
               height={cellHeight}
-              fill="#1e3a5f"
-              opacity={0.5}
+              fill={isDragTarget ? "#1d4ed8" : "#1e3a5f"}
+              opacity={isDragTarget ? 0.38 : 0.5}
             />
           )}
           <Rect
@@ -41,8 +44,8 @@ export default function GridLayer({ selectedCellIndex }: Props) {
             y={y}
             width={cellWidth}
             height={cellHeight}
-            stroke={isHighlighted ? HIGHLIGHT_COLOR : GRID_COLOR}
-            strokeWidth={isHighlighted ? 2 : GRID_STROKE}
+            stroke={isDragTarget ? "#60a5fa" : isHighlighted ? HIGHLIGHT_COLOR : GRID_COLOR}
+            strokeWidth={isDragTarget ? 3 : isHighlighted ? 2 : GRID_STROKE}
           />
           <Text
             x={x + 4}

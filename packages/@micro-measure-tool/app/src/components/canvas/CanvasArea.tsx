@@ -11,7 +11,6 @@ import { copyImageToProject } from "../../services/projectService";
 import GridLayer from "./GridLayer";
 import ImageLayer from "./ImageLayer";
 import ToolPreviewLayer from "./ToolPreviewLayer";
-import { rotatingRef } from "./rotationState";
 import type { Point } from "../../types";
 
 const PADDING = 20;
@@ -38,6 +37,7 @@ export default function CanvasArea() {
   const addMeasurement = useMeasurementsStore((s) => s.addMeasurement);
   const measurements = useMeasurementsStore((s) => s.measurements);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [dragTargetCellIndex, setDragTargetCellIndex] = useState<number | null>(null);
 
   useEffect(() => {
     function updateSize() {
@@ -64,36 +64,25 @@ export default function CanvasArea() {
 
   const findImageAtPoint = useCallback(
     (stagePoint: Point): string | null => {
-      for (const img of images) {
-        const r = Math.floor(img.cellIndex / cols);
-        const c = img.cellIndex % cols;
-        const cx = c * cellWidth + PADDING + img.offsetX;
-        const cy = r * cellHeight + PADDING + img.offsetY;
-        if (
-          stagePoint.x >= cx &&
-          stagePoint.x <= cx + cellWidth * displayZoom * img.scale &&
-          stagePoint.y >= cy &&
-          stagePoint.y <= cy + cellHeight * displayZoom * img.scale
-        ) {
-          return img.id;
-        }
-      }
-      return null;
+      const col = Math.floor((stagePoint.x - PADDING) / cellWidth);
+      const row = Math.floor((stagePoint.y - PADDING) / cellHeight);
+      if (col < 0 || col >= cols || row < 0 || row >= rows) return null;
+      const cellIndex = row * cols + col;
+      return images.find((img) => img.cellIndex === cellIndex)?.id ?? null;
     },
-    [images, cols, cellWidth, cellHeight, displayZoom],
+    [images, cols, rows, cellWidth, cellHeight],
   );
 
   const handleMouseDown = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
       if (e.evt.button === 2) {
         e.evt.preventDefault();
-        if (rotatingRef.current) return;
         isPanning.current = true;
         panStart.current = { x: e.evt.clientX, y: e.evt.clientY, panX, panY };
         return;
       }
       if (e.evt.button === 0 && calibrating) {
-        const pos = stageRef.current?.getPointerPosition();
+        const pos = stageRef.current?.getRelativePointerPosition();
         if (!pos) return;
         calDrawing.current = true;
         calLineRef.current = { x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y };
@@ -101,7 +90,7 @@ export default function CanvasArea() {
         return;
       }
       if (e.evt.button === 0 && activeToolId) {
-        const pos = stageRef.current?.getPointerPosition();
+        const pos = stageRef.current?.getRelativePointerPosition();
         if (!pos) return;
         const tool = getTool(activeToolId);
         if (!tool) return;
@@ -122,14 +111,14 @@ export default function CanvasArea() {
         return;
       }
       if (calDrawing.current && calibrating) {
-        const pos = stageRef.current?.getPointerPosition();
+        const pos = stageRef.current?.getRelativePointerPosition();
         if (!pos) return;
         calLineRef.current = { ...calLineRef.current, x2: pos.x, y2: pos.y };
         calForce((n) => n + 1);
         return;
       }
       if (activeToolId) {
-        const pos = stageRef.current?.getPointerPosition();
+        const pos = stageRef.current?.getRelativePointerPosition();
         if (!pos) return;
         const tool = getTool(activeToolId);
         if (!tool) return;
@@ -159,7 +148,7 @@ export default function CanvasArea() {
       return;
     }
     if (activeToolId) {
-      const pos = stageRef.current?.getPointerPosition();
+      const pos = stageRef.current?.getRelativePointerPosition();
       if (!pos) return;
       const tool = getTool(activeToolId);
       if (!tool) return;
@@ -181,8 +170,8 @@ export default function CanvasArea() {
       if (files.length === 0) return;
 
       const rect = containerRef.current!.getBoundingClientRect();
-      const stageX = e.clientX - rect.left - panX;
-      const stageY = e.clientY - rect.top - panY;
+      const stageX = (e.clientX - rect.left - panX) / scale;
+      const stageY = (e.clientY - rect.top - panY) / scale;
       const col = Math.floor((stageX - PADDING) / cellWidth);
       const row = Math.floor((stageY - PADDING) / cellHeight);
       const cellIdx =
@@ -211,7 +200,7 @@ export default function CanvasArea() {
         scale: 1,
       });
     },
-    [panX, panY, cellWidth, cellHeight, cols, rows, images, addImage],
+    [panX, panY, scale, cellWidth, cellHeight, cols, rows, images, addImage],
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -265,10 +254,12 @@ export default function CanvasArea() {
               ? images.find((i) => i.id === selectedId)?.cellIndex ?? null
               : null
           }
+          dragTargetCellIndex={dragTargetCellIndex}
         />
         <ImageLayer
           selectedId={selectedId}
           onSelectImage={setSelectedId}
+          onDragHoverCellChange={setDragTargetCellIndex}
         />
         <ToolPreviewLayer />
         {calibrating && (

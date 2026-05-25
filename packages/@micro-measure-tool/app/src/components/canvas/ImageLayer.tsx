@@ -54,9 +54,10 @@ function renderMeasurement(m: MeasurementData) {
 interface Props {
   selectedId: string | null;
   onSelectImage: (id: string | null) => void;
+  onDragHoverCellChange: (cellIndex: number | null) => void;
 }
 
-export default function ImageLayer({ selectedId, onSelectImage }: Props) {
+export default function ImageLayer({ selectedId, onSelectImage, onDragHoverCellChange }: Props) {
   const images = useImagesStore((s) => s.images);
   const measurements = useMeasurementsStore((s) => s.measurements);
   const displayZoom = useCalibrationStore((s) => s.displayZoom);
@@ -112,6 +113,7 @@ export default function ImageLayer({ selectedId, onSelectImage }: Props) {
             imageData={img}
             imageElement={el}
             isSelected={selectedId === img.id}
+            onDragHoverCellChange={onDragHoverCellChange}
             onSelect={() =>
               onSelectImage(selectedId === img.id ? null : img.id)
             }

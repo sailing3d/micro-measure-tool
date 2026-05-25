@@ -10,7 +10,6 @@ import Konva from "konva";
 import { useGridStore } from "../../stores/gridStore";
 import { useImagesStore } from "../../stores/imagesStore";
 import { useCalibrationStore } from "../../stores/calibrationStore";
-import { rotatingRef } from "./rotationState";
 import type { ImageData } from "../../types";
 
 const PADDING = 20;
@@ -19,6 +18,7 @@ interface Props {
   imageData: ImageData;
   imageElement: HTMLImageElement;
   isSelected: boolean;
+  onDragHoverCellChange: (cellIndex: number | null) => void;
   onSelect: () => void;
 }
 
@@ -26,6 +26,7 @@ export default function ImageGroup({
   imageData,
   imageElement,
   isSelected,
+  onDragHoverCellChange,
   onSelect,
 }: Props) {
   const cellWidth = useGridStore((s) => s.cellWidth);
@@ -51,14 +52,35 @@ export default function ImageGroup({
   const visW = imgW * imageData.scale;
   const visH = imgH * imageData.scale;
 
-  const centerX = cellX + imageData.offsetX + imgW / 2;
-  const centerY = cellY + imageData.offsetY + imgH / 2;
+  // Local center in cell coordinates (parent group is already translated to cellX/cellY).
+  const localCenterX = imageData.offsetX + imgW / 2;
+  const localCenterY = imageData.offsetY + imgH / 2;
 
-  const handleDragEnd = useCallback(() => {
+  const handleDragMove = useCallback(() => {
     const node = imgGroupRef.current;
     if (!node) return;
-    const nx = Math.round(node.x());
-    const ny = Math.round(node.y());
+    const stage = node.getStage();
+    const pos = stage ? node.getAbsolutePosition(stage) : { x: cellX + node.x(), y: cellY + node.y() };
+    const nc = Math.floor((pos.x - PADDING) / cellWidth);
+    const nr = Math.floor((pos.y - PADDING) / cellHeight);
+    const ni = nr * cols + nc;
+    const inRange = ni >= 0 && ni < rows * cols;
+    if (!inRange || ni === imageData.cellIndex) {
+      onDragHoverCellChange(null);
+      return;
+    }
+    onDragHoverCellChange(ni);
+  }, [imageData.cellIndex, cellWidth, cellHeight, cols, rows, cellX, cellY, onDragHoverCellChange]);
+
+  const handleDragEnd = useCallback(() => {
+    onDragHoverCellChange(null);
+    const node = imgGroupRef.current;
+    if (!node) return;
+    // Use stage-local coordinates (ignore Stage pan/zoom screen transform).
+    const stage = node.getStage();
+    const pos = stage ? node.getAbsolutePosition(stage) : { x: cellX + node.x(), y: cellY + node.y() };
+    const nx = Math.round(pos.x);
+    const ny = Math.round(pos.y);
     const nc = Math.floor((nx - PADDING) / cellWidth);
     const nr = Math.floor((ny - PADDING) / cellHeight);
     const ni = nr * cols + nc;
@@ -66,11 +88,7 @@ export default function ImageGroup({
     if (ni >= 0 && ni < rows * cols && ni !== imageData.cellIndex) {
       const tgt = images.find((i) => i.cellIndex === ni);
       if (tgt) {
-        const tr = Math.floor(tgt.cellIndex / cols);
-        const tc = tgt.cellIndex % cols;
-        moveImageToCell(tgt.id, imageData.cellIndex,
-          tgt.offsetX - tc * cellWidth + c * cellWidth,
-          tgt.offsetY - tr * cellHeight + r * cellHeight);
+        moveImageToCell(tgt.id, imageData.cellIndex, tgt.offsetX, tgt.offsetY);
       }
       const newCellX = nc * cellWidth + PADDING;
       const newCellY = nr * cellHeight + PADDING;
@@ -83,61 +101,19 @@ export default function ImageGroup({
         offsetY: Math.round(ny - imgH / 2 - cellY),
       });
     }
-  }, [imageData, cellWidth, cellHeight, cols, rows, cellX, cellY, r, c, imgW, imgH, updateImage, moveImageToCell, images]);
+  }, [imageData, cellWidth, cellHeight, cols, rows, cellX, cellY, imgW, imgH, updateImage, moveImageToCell, images, onDragHoverCellChange]);
 
   const handleTransformEnd = useCallback(() => {
     const node = imgGroupRef.current;
     if (!node) return;
-    updateImage(imageData.id, { scale: node.scaleX() });
+    // Transformer already reports the final absolute node scale.
+    const nextScale = Math.max(0.01, node.scaleX());
+    const nextRotation = Math.round(node.rotation());
+    // Keep transformer interaction stable: persist scale, then normalize node scale.
+    node.scaleX(1);
+    node.scaleY(1);
+    updateImage(imageData.id, { scale: nextScale, rotation: nextRotation });
   }, [imageData, updateImage]);
-
-  const rotating = useRef(false);
-  const baseAngle = useRef(0);
-
-  useEffect(() => {
-    const node = imgGroupRef.current;
-    if (!node) return;
-
-    function onDown(e: Konva.KonvaEventObject<MouseEvent>) {
-      if (e.evt.button !== 2) return;
-      e.evt.preventDefault();
-      const stage = node?.getStage();
-      if (!stage) return;
-      const p = stage.getPointerPosition();
-      if (!p) return;
-      const ma = Math.atan2(p.y - centerY, p.x - centerX) * 180 / Math.PI;
-      rotatingRef.current = true;
-      rotating.current = true;
-      baseAngle.current = ma - imageData.rotation;
-    }
-
-    function onMove() {
-      if (!rotating.current) return;
-      const stage = node?.getStage();
-      if (!stage) return;
-      const p = stage.getPointerPosition();
-      if (!p) return;
-      const ma = Math.atan2(p.y - centerY, p.x - centerX) * 180 / Math.PI;
-      updateImage(imageData.id, { rotation: Math.round(ma - baseAngle.current) });
-    }
-
-    function onUp() { rotating.current = false; rotatingRef.current = false; }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    node.on("mousedown.rotimg", onDown as any);
-    const stage = node.getStage();
-    if (stage) {
-      stage.on("mousemove.rotimg", onMove);
-      stage.on("mouseup.rotimg", onUp);
-    }
-    return () => {
-      node.off("mousedown.rotimg");
-      if (stage) {
-        stage.off("mousemove.rotimg", onMove);
-        stage.off("mouseup.rotimg", onUp);
-      }
-    };
-  }, [imageData, updateImage, centerX, centerY]);
 
   useEffect(() => {
     if (isSelected && trRef.current && imgGroupRef.current) {
@@ -151,11 +127,13 @@ export default function ImageGroup({
       <Group x={cellX} y={cellY}
         clipX={0} clipY={0} clipWidth={cellWidth} clipHeight={cellHeight}>
         <Group ref={imgGroupRef}
-          x={centerX} y={centerY}
+          x={localCenterX} y={localCenterY}
           draggable
           rotation={imageData.rotation}
           scaleX={imageData.scale} scaleY={imageData.scale}
           onClick={onSelect} onTap={onSelect}
+          onDragStart={() => onDragHoverCellChange(null)}
+          onDragMove={handleDragMove}
           onDragEnd={handleDragEnd}
           onTransformEnd={handleTransformEnd}>
           <KonvaImage image={imageElement}
@@ -166,7 +144,9 @@ export default function ImageGroup({
 
       {isSelected && (
         <>
-          <Transformer ref={trRef} rotateEnabled={false}
+          <Transformer ref={trRef}
+            centeredScaling
+            enabledAnchors={["top-left", "top-right", "bottom-left", "bottom-right"]}
             boundBoxFunc={(_oldBox, newBox) => {
               if (visW <= 0 || visH <= 0) return newBox;
               const ratio = visW / visH;
