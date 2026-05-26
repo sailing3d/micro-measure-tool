@@ -23,9 +23,10 @@ function renderMeasurement(
 
   if (m.type === "h-line" && "points" in m.data) {
     const [p1, p2] = m.data.points;
-    const midX = (p1.x + p2.x) / 2;
-    const midY = (p1.y + p2.y) / 2;
-    const elements = [
+    const pp = "paraPoints" in m.data ? (m.data as import("../../types").HLineMeasurement).paraPoints : null;
+    const elements = [];
+    
+    elements.push(
       <Line
         key={m.id}
         points={[p1.x, p1.y, p2.x, p2.y]}
@@ -36,8 +37,57 @@ function renderMeasurement(
         hitStrokeWidth={10}
         listening={true}
       />,
-    ];
-    if (num) {
+    );
+    
+    if (pp) {
+      elements.push(
+        <Line
+          key={`${m.id}-para`}
+          points={[pp[0].x, pp[0].y, pp[1].x, pp[1].y]}
+          stroke={color}
+          strokeWidth={sw}
+        />,
+      );
+      const mx = (p1.x + p2.x) / 2;
+      const my = (p1.y + p2.y) / 2;
+      const cmx = (pp[0].x + pp[1].x) / 2;
+      const cmy = (pp[0].y + pp[1].y) / 2;
+      elements.push(
+        <Line
+          key={`${m.id}-conn`}
+          points={[mx, my, cmx, cmy]}
+          stroke={isHighlighted ? "#06b6d4" : "#5eead4"}
+          strokeWidth={1.5}
+          dash={[4, 2]}
+        />,
+      );
+      elements.push(
+        <Circle
+          key={`${m.id}-dot`}
+          x={(mx + cmx) / 2}
+          y={(my + cmy) / 2}
+          radius={10}
+          stroke={isHighlighted ? "#06b6d4" : "#5eead4"}
+          strokeWidth={1}
+          listening={false}
+        />,
+      );
+      if (num) {
+        elements.push(
+          <Text
+            key={`${m.id}-num`}
+            x={(mx + cmx) / 2 + 6}
+            y={(my + cmy) / 2 - 14}
+            text={num}
+            fontSize={11}
+            fill={color}
+            listening={false}
+          />,
+        );
+      }
+    } else if (num) {
+      const midX = (p1.x + p2.x) / 2;
+      const midY = (p1.y + p2.y) / 2;
       elements.push(
         <Text
           key={`${m.id}-num`}

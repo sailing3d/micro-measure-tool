@@ -19,6 +19,7 @@ export type MeasurementType = "h-line" | "constrained-circle";
 
 export interface HLineMeasurement {
   points: [Point, Point];
+  paraPoints: [Point, Point];
   lengthPx: number;
   lengthUm: number;
 }
