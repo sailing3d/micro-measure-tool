@@ -11,5 +11,9 @@
     "preview": "npm -w @micro-measure-tool/app run preview",
     "lint": "npm -w @micro-measure-tool/app run lint",
     "typecheck": "npm -w @micro-measure-tool/app run typecheck"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "vite": "^5.4.21"
   }
 }
