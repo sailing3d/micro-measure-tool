@@ -157,7 +157,7 @@ export function exportMarkdown(
   images: ImageData[],
   measurements: MeasurementData[],
 ): string {
-  let md = `# 测量数据\n\n`;
+  let md = "\uFEFF# 测量数据\n\n";
   for (const img of images) {
     const imgMeasurements = measurements.filter((m) => m.imageId === img.id);
     if (imgMeasurements.length === 0) continue;
@@ -182,7 +182,7 @@ export function exportCSV(
   images: ImageData[],
   measurements: MeasurementData[],
 ): string {
-  let csv = "图片,测量名称,类型,值,单位\n";
+  let csv = "\uFEFF图片,测量名称,类型,值,单位\n";
   for (const img of images) {
     for (const m of measurements) {
       if (m.imageId !== img.id) continue;
