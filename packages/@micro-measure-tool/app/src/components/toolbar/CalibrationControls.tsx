@@ -54,6 +54,17 @@ export default function CalibrationControls() {
           className="ml-1 w-20 rounded bg-gray-800 px-1 py-0.5 text-center text-gray-200 outline-none"
         />
       </label>
+      <button
+        className={`rounded px-2 py-0.5 text-xs text-gray-100 ${
+          calibrating
+            ? "bg-amber-600 hover:bg-amber-500"
+            : "bg-gray-800 hover:bg-gray-700"
+        }`}
+        onClick={calibrating ? cancelCalibrating : handleStartCalibrating}
+        style={{ minWidth: "4rem" }}
+      >
+        {calibrating ? "取消" : "画线标定"}
+      </button>
       <label>
         Zoom
         <input
@@ -76,17 +87,6 @@ export default function CalibrationControls() {
         title="重置缩放"
       >
         ↺
-      </button>
-      <button
-        className={`rounded px-2 py-0.5 text-xs text-gray-100 ${
-          calibrating
-            ? "bg-amber-600 hover:bg-amber-500"
-            : "bg-gray-800 hover:bg-gray-700"
-        }`}
-        onClick={calibrating ? cancelCalibrating : handleStartCalibrating}
-        style={{ minWidth: "4rem" }}
-      >
-        {calibrating ? "取消" : "画线标定"}
       </button>
     </div>
   );
