@@ -7,7 +7,6 @@
   ],
   "scripts": {
     "dev": "npm -w @micro-measure-tool/app run dev",
-    "dev:https": "node scripts/dev-https.js",
     "build": "npm -w @micro-measure-tool/app run build",
     "deploy": "bash scripts/deploy.sh",
     "preview": "npm -w @micro-measure-tool/app run preview",
