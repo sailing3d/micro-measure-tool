@@ -85,6 +85,7 @@ export default function CanvasArea() {
       if (e.evt.button === 0 && calibrating) {
         const pos = stageRef.current?.getRelativePointerPosition();
         if (!pos) return;
+        if (!findImageAtPoint(pos)) return;
         if (!calPoint1.current) {
           calPoint1.current = { x: pos.x, y: pos.y };
           calPointer.current = { x: pos.x, y: pos.y };

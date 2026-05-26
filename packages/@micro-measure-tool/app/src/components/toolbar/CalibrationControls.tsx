@@ -48,6 +48,7 @@ export default function CalibrationControls() {
             : "bg-gray-800 hover:bg-gray-700"
         }`}
         onClick={calibrating ? cancelCalibrating : handleStartCalibrating}
+        style={{ minWidth: "4rem" }}
       >
         {calibrating ? "取消" : "画线标定"}
       </button>
