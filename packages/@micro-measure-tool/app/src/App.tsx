@@ -85,6 +85,8 @@ export default function App() {
     setRatio(data.calibration.ratio);
     setDisplayZoom(data.displayZoom);
     setBaseZoom(data.displayZoom);
+    setImages([]);
+    setMeasurements([]);
 
     Promise.all(
       data.images.map(async (img) => {
@@ -93,10 +95,9 @@ export default function App() {
       }),
     ).then((imgsWithUrls) => {
       setImages(imgsWithUrls);
+      const allMeasurements = data.images.flatMap((img) => img.measurements);
+      setMeasurements(allMeasurements);
     });
-
-    const allMeasurements = data.images.flatMap((img) => img.measurements);
-    setMeasurements(allMeasurements);
   }
 
   useEffect(() => {

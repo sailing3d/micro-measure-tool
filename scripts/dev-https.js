@@ -125,19 +125,36 @@ function startProxy() {
     clientReq.pipe(proxy);
   });
 
-  server.on("upgrade", (clientReq, socket, head) => {
+  server.on("upgrade", (clientReq, clientSocket, head) => {
     const options = {
       hostname: "localhost",
       port: 5173,
       path: clientReq.url,
-      method: clientReq.method,
-      headers: { ...clientReq.headers, host: "localhost:5173" },
+      method: "GET",
+      headers: {
+        ...clientReq.headers,
+        host: "localhost:5173",
+      },
     };
-    const proxy = http.request(options);
-    proxy.on("upgrade", (proxyRes, proxySocket, proxyHead) => {
-      proxySocket.pipe(socket);
-      socket.pipe(proxySocket);
+
+    const proxyReq = http.request(options);
+    proxyReq.on("upgrade", (proxyRes, proxySocket) => {
+      proxySocket.write(head);
+      clientSocket.write(
+        "HTTP/1.1 101 Switching Protocols\r\n" +
+          Object.keys(proxyRes.headers)
+            .map((k) => `${k}: ${proxyRes.headers[k]}`)
+            .join("\r\n") +
+          "\r\n\r\n",
+      );
+      proxySocket.pipe(clientSocket);
+      clientSocket.pipe(proxySocket);
     });
+    proxyReq.on("error", () => {
+      clientSocket.end();
+    });
+    proxyReq.end();
+  });
     proxy.end(head);
   });
 
