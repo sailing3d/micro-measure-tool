@@ -251,7 +251,8 @@ packages/@micro-measure-tool/app/src/
 │   ├── measurementsStore.ts
 │   └── toolStore.ts
 ├── services/
-│   └── projectService.ts        # File System Access API 封装
+│   ├── projectService.ts        # File System Access API 封装
+│   └── dbService.ts             # IndexedDB (folderHandle 持久化)
 ├── components/
 │   ├── startup/
 │   │   └── StartupDialog.tsx
@@ -260,13 +261,17 @@ packages/@micro-measure-tool/app/src/
 │   │   ├── ProjectControls.tsx
 │   │   ├── GridControls.tsx
 │   │   ├── CalibrationControls.tsx
-│   │   └── ToolSelector.tsx
+│   │   ├── ToolSelector.tsx
+│   │   └── HelpDialog.tsx
 │   ├── canvas/
 │   │   ├── CanvasArea.tsx
 │   │   ├── GridLayer.tsx
+│   │   ├── GridLabelsLayer.tsx
 │   │   ├── ImageLayer.tsx
 │   │   ├── ImageGroup.tsx
-│   │   └── ToolPreviewLayer.tsx
+│   │   ├── ToolPreviewLayer.tsx
+│   │   ├── canvasExport.ts
+│   │   └── rotationState.ts     (已删除)
 │   └── side-panel/
 │       ├── SidePanel.tsx
 │       ├── ImageList.tsx
