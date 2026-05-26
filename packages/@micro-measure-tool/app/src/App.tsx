@@ -14,6 +14,7 @@ import StartupDialog from "./components/startup/StartupDialog";
 import Toolbar from "./components/toolbar/Toolbar";
 import CanvasArea from "./components/canvas/CanvasArea";
 import SidePanel from "./components/side-panel/SidePanel";
+import HelpDialog from "./components/toolbar/HelpDialog";
 
 export default function App() {
   const isOpen = useProjectStore((s) => s.isOpen);
@@ -23,6 +24,7 @@ export default function App() {
   const displayZoom = useCalibrationStore((s) => s.displayZoom);
   const [showStartup, setShowStartup] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [showHelp, setShowHelp] = useState(false);
   const [highlightedMeasurementId, setHighlightedMeasurementId] = useState<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(null);
   const triedRestore = useRef(false);
@@ -183,7 +185,7 @@ export default function App() {
 
   return (
     <div className="flex h-screen flex-col bg-gray-950">
-      <Toolbar />
+      <Toolbar onHelp={() => setShowHelp(true)} />
       <div className="flex flex-1 overflow-hidden">
         <CanvasArea
           highlightedMeasurementId={highlightedMeasurementId}
@@ -194,6 +196,7 @@ export default function App() {
           onHighlightMeasurement={setHighlightedMeasurementId}
         />
       </div>
+      {showHelp && <HelpDialog onClose={() => setShowHelp(false)} />}
     </div>
   );
 }
