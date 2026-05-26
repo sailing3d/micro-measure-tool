@@ -1,6 +1,6 @@
 import type { Point, MeasurementData } from "../types";
 
-export type ShapeType = "line" | "circle";
+export type ShapeType = "line" | "circle" | "text";
 
 export interface ShapeData {
   id: string;

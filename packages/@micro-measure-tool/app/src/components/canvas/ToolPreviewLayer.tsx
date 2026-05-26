@@ -1,4 +1,4 @@
-import { Layer, Line, Circle } from "react-konva";
+import { Layer, Line, Circle, Text } from "react-konva";
 import { useToolStore } from "../../stores/toolStore";
 import { getTool } from "../../tools/registry";
 import type { ShapeData } from "../../tools/types";
@@ -26,6 +26,19 @@ function renderShape(s: ShapeData) {
         radius={p.radius as number}
         stroke={p.stroke as string}
         strokeWidth={p.strokeWidth as number}
+      />
+    );
+  }
+  if (s.type === "text") {
+    const p = s.props;
+    return (
+      <Text
+        key={s.id}
+        x={p.x as number}
+        y={p.y as number}
+        text={p.text as string}
+        fontSize={p.fontSize as number}
+        fill={p.fill as string}
       />
     );
   }

@@ -160,6 +160,18 @@ export class HLineTool implements MeasurementTool {
         });
 
         shapes.push({
+          id: "distance-label",
+          type: "text",
+          props: {
+            x: (mx + cmx) / 2 + 8,
+            y: (my + cmy) / 2 - 8,
+            text: `${Math.abs(this.offset).toFixed(1)}`,
+            fontSize: 12,
+            fill: "#06b6d4",
+          },
+        });
+
+        shapes.push({
           id: "connector-label",
           type: "circle",
           props: { x: (mx + cmx) / 2, y: (my + cmy) / 2, radius: 12, fill: "#00000000", stroke: "#06b6d4", strokeWidth: 1 },
