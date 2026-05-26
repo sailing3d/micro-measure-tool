@@ -1,10 +1,17 @@
 import { useToolStore } from "../../stores/toolStore";
+import { useCalibrationStore } from "../../stores/calibrationStore";
 import { getTools } from "../../tools/registry";
 
 export default function ToolSelector() {
   const activeToolId = useToolStore((s) => s.activeToolId);
   const selectTool = useToolStore((s) => s.selectTool);
+  const cancelCalibrating = useCalibrationStore((s) => s.cancelCalibrating);
   const tools = getTools();
+
+  function handleSelect(id: string) {
+    cancelCalibrating();
+    selectTool(activeToolId === id ? null : id);
+  }
 
   return (
     <div className="flex items-center gap-1 text-xs">
@@ -16,9 +23,7 @@ export default function ToolSelector() {
               ? "bg-blue-600 text-gray-100"
               : "bg-gray-800 text-gray-400 hover:bg-gray-700"
           }`}
-          onClick={() =>
-            selectTool(activeToolId === tool.id ? null : tool.id)
-          }
+          onClick={() => handleSelect(tool.id)}
         >
           {tool.name}
         </button>

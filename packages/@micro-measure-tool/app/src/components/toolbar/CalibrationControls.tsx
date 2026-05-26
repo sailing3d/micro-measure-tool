@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useCalibrationStore } from "../../stores/calibrationStore";
+import { useToolStore } from "../../stores/toolStore";
 
 export default function CalibrationControls() {
   const ratio = useCalibrationStore((s) => s.ratio);
@@ -7,6 +8,7 @@ export default function CalibrationControls() {
   const setRatio = useCalibrationStore((s) => s.setRatio);
   const startCalibrating = useCalibrationStore((s) => s.startCalibrating);
   const cancelCalibrating = useCalibrationStore((s) => s.cancelCalibrating);
+  const selectTool = useToolStore((s) => s.selectTool);
   const [inputVal, setInputVal] = useState(String(ratio));
 
   useEffect(() => {
@@ -16,6 +18,11 @@ export default function CalibrationControls() {
   function saveRatio() {
     const v = parseFloat(inputVal);
     if (v > 0) setRatio(v);
+  }
+
+  function handleStartCalibrating() {
+    selectTool(null);
+    startCalibrating();
   }
 
   return (
@@ -34,21 +41,16 @@ export default function CalibrationControls() {
           className="ml-1 w-20 rounded bg-gray-800 px-1 py-0.5 text-center text-gray-200 outline-none"
         />
       </label>
-      {!calibrating ? (
-        <button
-          className="rounded bg-blue-600 px-2 py-0.5 text-xs hover:bg-blue-500 text-gray-100"
-          onClick={startCalibrating}
-        >
-          画线标定
-        </button>
-      ) : (
-        <button
-          className="rounded bg-red-600 px-2 py-0.5 text-xs hover:bg-red-500 text-gray-100"
-          onClick={cancelCalibrating}
-        >
-          取消
-        </button>
-      )}
+      <button
+        className={`rounded px-2 py-0.5 text-xs text-gray-100 ${
+          calibrating
+            ? "bg-red-600 hover:bg-red-500"
+            : "bg-blue-600 hover:bg-blue-500"
+        }`}
+        onClick={calibrating ? cancelCalibrating : handleStartCalibrating}
+      >
+        {calibrating ? "取消" : "画线标定"}
+      </button>
     </div>
   );
 }
