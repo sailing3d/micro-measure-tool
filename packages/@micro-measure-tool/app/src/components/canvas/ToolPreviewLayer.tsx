@@ -40,6 +40,8 @@ function renderShape(s: ShapeData) {
         fontSize={p.fontSize as number}
         fontFamily={p.fontFamily as string}
         fill={p.fill as string}
+        stroke={p.stroke as string}
+        strokeWidth={p.strokeWidth as number}
       />
     );
   }

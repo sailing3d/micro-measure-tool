@@ -70,6 +70,8 @@ function renderMeasurement(
             text={num}
             fontSize={11}
             fill={color}
+            stroke="#ffffff"
+            strokeWidth={0.5}
             listening={false}
           />,
         );
@@ -83,6 +85,8 @@ function renderMeasurement(
             text={`${m.data.lengthUm.toFixed(1)} µm`}
             fontSize={10}
             fill={color}
+            stroke="#ffffff"
+            strokeWidth={0.5}
             listening={false}
           />,
         );
@@ -98,6 +102,8 @@ function renderMeasurement(
           text={num}
           fontSize={11}
           fill={color}
+          stroke="#ffffff"
+          strokeWidth={0.5}
           listening={false}
         />,
       );
@@ -143,6 +149,8 @@ function renderMeasurement(
             text={num}
             fontSize={11}
             fill={color}
+            stroke="#ffffff"
+            strokeWidth={0.5}
             listening={false}
           />,
         );
