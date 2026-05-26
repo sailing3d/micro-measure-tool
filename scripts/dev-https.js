@@ -150,8 +150,6 @@ function startProxy() {
     proxyReq.on("error", () => { clientSocket.end(); });
     proxyReq.end();
   });
-    proxy.end(head);
-  });
 
   server.listen(PORT, "0.0.0.0", () => {
     console.log(`\n========================================`);
