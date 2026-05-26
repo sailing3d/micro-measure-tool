@@ -163,10 +163,11 @@ export class HLineTool implements MeasurementTool {
           id: "distance-label",
           type: "text",
           props: {
-            x: (mx + cmx) / 2 + 8,
-            y: (my + cmy) / 2 - 8,
+            x: (mx + cmx) / 2 + 10,
+            y: (my + cmy) / 2 - 12,
             text: `${Math.abs(this.offset).toFixed(1)}`,
-            fontSize: 12,
+            fontSize: 14,
+            fontFamily: "Arial",
             fill: "#06b6d4",
           },
         });

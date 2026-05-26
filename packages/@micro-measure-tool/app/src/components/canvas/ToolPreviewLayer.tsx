@@ -38,6 +38,7 @@ function renderShape(s: ShapeData) {
         y={p.y as number}
         text={p.text as string}
         fontSize={p.fontSize as number}
+        fontFamily={p.fontFamily as string}
         fill={p.fill as string}
       />
     );
