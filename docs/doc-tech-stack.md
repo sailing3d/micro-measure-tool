@@ -54,86 +54,18 @@ related:
 | `FileSystemFileHandle.createWritable` | 写入文件 |
 | `Window.showSaveFilePicker` | 导出文件选择保存位置 |
 
-## 设计模式与架构
+## 架构概览
 
-### 组件架构
-
-```
-App
-├── StartupDialog          (启动: 新建/打开项目)
-├── Layout
-│   ├── Toolbar
-│   │   ├── ProjectControls (项目名, 保存, 导出, 关闭)
-│   │   ├── GridControls   (行列数, 格子大小)
-│   │   ├── CalibrationControls (µm/px, Zoom, 画线标定)
-│   │   └── ToolSelector   (测量工具切换)
-│   ├── CanvasArea
-│   │   └── Konva Stage
-│   │       ├── GridLayer     (格子边框)
-│   │       ├── ImageLayer    (图片 + 已完成测量图形)
-│   │       ├── GridLabelsLayer (文件名标签, 顶层)
-│   │       ├── ToolPreviewLayer (测量中的预览图形)
-│   │       └── [Calibration Line Layer]
-│   └── SidePanel
-│       ├── ImageList       (图片列表/重命名)
-│       └── MeasurementTree (测量结果树形展示)
-```
-
-### 状态管理 (6 个 zustand Store)
-
-| Store | 职责 |
-|-------|------|
-| `useProjectStore` | 项目名称, 打开状态 |
-| `useGridStore` | 行列数, 格子大小, 画布平移 |
-| `useCalibrationStore` | µm/px 比例, displayZoom, 标定模式 |
-| `useImagesStore` | 图片列表, CRUD, 格子间移动 |
-| `useMeasurementsStore` | 测量记录, 增删 |
-| `useToolStore` | 当前激活工具, 测量状态 |
-
-### Konva 图层分层
-
-自底向上:
-
-| 层序 | 组件 | 职责 |
-|------|------|------|
-| 1 | GridLayer | 格子边框, 选中高亮 |
-| 2 | ImageLayer | 图片渲染, 已完成测量图形 (Line, Circle, Text) |
-| 3 | ToolPreviewLayer | 测量进行中的预览图形 |
-| 4 | GridLabelsLayer | 图片文件名标签 |
-
-### 测量工具插件体系
-
-```
-tools/
-├── types.ts       # MeasurementTool 接口 + ShapeData 预览类型
-├── registry.ts    # 工具注册表 (registerTool, getTool)
-├── init.ts        # 工具自动注册 (App mount 时调用)
-├── hLineTool.ts   # H 型距离测量
-└── constrainedCircleTool.ts  # 限定圆测量
-```
-
-接口设计:
-```typescript
-interface MeasurementTool {
-  id: string;
-  name: string;
-  onPointerDown(point): void;
-  onPointerMove(point): void;
-  onPointerUp(point): MeasurementData | null;
-  getPreview(): ShapeData[];
-  reset(): void;
-}
-```
-
-新增工具只需实现接口 + `registerTool()` 即可集成。
+组件树, 6 个 Store, 测量工具插件体系详见 [架构设计](doc-architecture.md).
 
 ## 数据持久化
 
 | 机制 | 用途 |
 |------|------|
 | `project.json` | 项目文件夹内, 存储格子配置, 标定值, 图片列表, 测量数据 |
-| `sessionStorage` | zustand `persist` middleware, 刷新恢复状态 (不影响浏览器历史) |
-| `localStorage` | 全局项目索引 (recent projects) |
+| `IndexedDB` | `dbService.ts`, 持久化 `FileSystemDirectoryHandle`, 刷新后自动恢复项目 |
+| `sessionStorage` | zustand `persist` middleware, 6 个 Store 刷新恢复 |
+| `localStorage` | 全局项目索引 (recent projects)
 
 ## 坐标系约定
 
@@ -144,12 +76,6 @@ interface MeasurementTool {
 - `imgW = naturalWidth * displayZoom`: 图片渲染尺寸
 - 详见 `docs/doc-coordinate-system.md`
 
-## 开发环境
+### 开发环境
 
-| 命令 | 说明 |
-|------|------|
-| `npm run dev` | HTTP dev server (localhost:5173) |
-| `npm run dev:https` | HTTPS 代理 (0.0.0.0:5443), 外挂脚本自签证书 |
-| `npm run build` | TypeScript 检查 + Vite 构建 |
-| `npm run typecheck` | 仅 TypeScript 类型检查 |
-| `npm run lint` | ESLint 检查 |
+详见 [README](../README.md).

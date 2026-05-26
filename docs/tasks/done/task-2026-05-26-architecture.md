@@ -23,7 +23,7 @@ related:
 3. [x] 设计数据流 (File System API ↔ store ↔ UI)
 4. [x] 输出 `docs/doc-architecture.md`
 5. [x] 更新 `docs/doc-index.md`
-6. [ ] 提交 + 用户确认 + 移到 done
+6. [x] 提交 + 用户确认
 
 ## 决策记录
 

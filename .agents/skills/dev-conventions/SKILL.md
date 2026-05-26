@@ -141,8 +141,5 @@ git merge task-yyyy-mm-dd-xxx --ff-only   # 快进合并, 保持线性
 ## 依赖管理
 
 - 本项目采用 monorepo 结构, 根目录下的 `package.json` 管理所有依赖
-- 每个子项目 (如 `packages/agent`, `packages/ui`) 可以有自己的 `package.json` 来声明特定依赖, 但不应该包含重复的公共依赖
-- 部分子项目以 submodule 形式存在, 需要在对应子项目目录执行 git 命令
-- 公司公共项目放在 `packages/@sailing3d/` 下, 本项目专属子项目放在 `packages/@micro-measure-tool/` 下
+- 公共库放在 `packages/@sailing3d/` 下, 本项目包放在 `packages/@micro-measure-tool/` 下
 - 依赖更新必须在根目录执行, 确保所有子项目使用相同版本的公共依赖
-- 定期检查和更新依赖, 避免过时和安全风险

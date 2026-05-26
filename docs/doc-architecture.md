@@ -133,13 +133,14 @@ App
 
 ## 4. Konva 图层设计
 
-自底向上 3 个 Layer:
+自底向上 4 个 Layer:
 
 | 层序 | 名称 | 交互 | 内容 |
 |------|------|------|------|
-| 1 | **GridLayer** | 右键拖动 → 平移画布 | 格子边框矩形, 编号标签 |
-| 2 | **ImageLayer** | 左键拖图片/旋转/缩放, 拖拽到其他格子 | KonvaImage + 已完成的测量图形 |
-| 3 | **ToolPreviewLayer** | 跟随鼠标的绘制预览 | 测量工具在绘制中的临时图形 |
+| 1 | **GridLayer** | 右键拖动 → 平移画布 | 格子边框矩形, 选中高亮 |
+| 2 | **ImageLayer** | 图片拖拽/交换, 测量图形 hover | KonvaImage + Transformer + 已完成测量图形 |
+| 3 | **ToolPreviewLayer** | 跟随鼠标的绘制预览 | 工具绘制中的临时图形 |
+| 4 | **GridLabelsLayer** | 无交互 (listening=false) | 图片文件名, 渲染在最顶层 |
 
 ### 坐标空间
 
@@ -232,9 +233,15 @@ File System Access API
 - 防抖 (debounce 500ms) 后调用 `ProjectService.saveProject()`
 - 写入 `project.json`
 
+**自动恢复:**
+- `dbService.ts` 封装 IndexedDB, `createProject`/`openProject` 时保存 `FileSystemDirectoryHandle`
+- App 启动时检查 IndexedDB, 如有有效 handle 则自动恢复项目 (跳过 StartupDialog)
+- 关闭项目时清除 IndexedDB
+
 **导出:**
 - 从 `measurementsStore` 读取所有测量
-- 按图片分组, 格式化为 Markdown 表格 / CSV
+- 按图片分组, 格式化为 Markdown 表格 / CSV (含 UTF-8 BOM)
+- 通过 `stage.toBlob()` 导出完整画布为 PNG (2x 分辨率, 不含 UI)
 - 通过 File System Access API 让用户选择保存位置
 
 ## 7. 目录结构
@@ -271,7 +278,6 @@ packages/@micro-measure-tool/app/src/
 │   │   ├── ImageGroup.tsx
 │   │   ├── ToolPreviewLayer.tsx
 │   │   ├── canvasExport.ts
-│   │   └── rotationState.ts     (已删除)
 │   └── side-panel/
 │       ├── SidePanel.tsx
 │       ├── ImageList.tsx
