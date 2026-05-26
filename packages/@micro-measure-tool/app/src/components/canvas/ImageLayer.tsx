@@ -71,7 +71,8 @@ function renderMeasurement(
             fontSize={11}
             fill={color}
             stroke="#ffffff"
-            strokeWidth={0.5}
+            strokeWidth={0.2}
+            fillAfterStrokeEnabled={false}
             listening={false}
           />,
         );
@@ -86,7 +87,8 @@ function renderMeasurement(
             fontSize={10}
             fill={color}
             stroke="#ffffff"
-            strokeWidth={0.5}
+            strokeWidth={0.2}
+            fillAfterStrokeEnabled={false}
             listening={false}
           />,
         );
@@ -150,7 +152,8 @@ function renderMeasurement(
             fontSize={11}
             fill={color}
             stroke="#ffffff"
-            strokeWidth={0.5}
+            strokeWidth={0.2}
+            fillAfterStrokeEnabled={false}
             listening={false}
           />,
         );

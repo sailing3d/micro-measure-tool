@@ -25,8 +25,9 @@ export default function GridLabelsLayer() {
             text={img.filename}
             fontSize={10}
             fill="#e2e8f0"
-            stroke="#000000"
-            strokeWidth={0.5}
+            stroke="#ffffff"
+            strokeWidth={0.2}
+            fillAfterStrokeEnabled={false}
             shadowColor="#0f172a"
             shadowBlur={2}
             shadowOffsetX={1}

@@ -170,7 +170,7 @@ export class HLineTool implements MeasurementTool {
             fontFamily: "Arial",
             fill: "#06b6d4",
             stroke: "#ffffff",
-            strokeWidth: 0.5,
+            strokeWidth: 0.2,
           },
         });
       }

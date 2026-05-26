@@ -150,8 +150,9 @@ export default function ImageGroup({
             text="x"
             fontSize={10}
             fill="#fff"
-            stroke="#000000"
-            strokeWidth={0.3}
+            stroke="#ffffff"
+            strokeWidth={0.15}
+            fillAfterStrokeEnabled={false}
             listening={false}
           />
           <Rect
@@ -182,8 +183,9 @@ export default function ImageGroup({
             text="0"
             fontSize={10}
             fill="#fff"
-            stroke="#000000"
-            strokeWidth={0.3}
+            stroke="#ffffff"
+            strokeWidth={0.15}
+            fillAfterStrokeEnabled={false}
             listening={false}
           />
         </>
