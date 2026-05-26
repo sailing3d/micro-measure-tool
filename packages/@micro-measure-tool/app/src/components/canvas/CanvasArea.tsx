@@ -8,6 +8,7 @@ import { useToolStore } from "../../stores/toolStore";
 import { useMeasurementsStore } from "../../stores/measurementsStore";
 import { getTool } from "../../tools/registry";
 import { copyImageToProject } from "../../services/projectService";
+import { canvasExport } from "./canvasExport";
 import GridLayer from "./GridLayer";
 import GridLabelsLayer from "./GridLabelsLayer";
 import ImageLayer from "./ImageLayer";
@@ -80,6 +81,32 @@ export default function CanvasArea({ highlightedMeasurementId, onHighlightMeasur
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [calibrating, activeToolId, cancelCalibrating, selectTool]);
+
+  useEffect(() => {
+    canvasExport.fn = () => {
+      const stage = stageRef.current;
+      if (!stage) return;
+      stage.toBlob({
+        mimeType: "image/png",
+        pixelRatio: 2,
+        callback: async (blob) => {
+          if (!blob) return;
+          try {
+            const handle = await window.showSaveFilePicker({
+              suggestedName: "canvas.png",
+              types: [{ description: "PNG Image", accept: { "image/png": [".png"] } }],
+            });
+            const writable = await handle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+          } catch {
+            // cancelled
+          }
+        },
+      });
+    };
+    return () => { canvasExport.fn = null; };
+  }, []);
 
   const isPanning = useRef(false);
   const panStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });

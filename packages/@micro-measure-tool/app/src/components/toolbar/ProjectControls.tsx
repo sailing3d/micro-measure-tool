@@ -10,6 +10,7 @@ import {
 } from "../../services/projectService";
 import { useGridStore } from "../../stores/gridStore";
 import { useCalibrationStore } from "../../stores/calibrationStore";
+import { canvasExport } from "../canvas/canvasExport";
 
 export default function ProjectControls() {
   const name = useProjectStore((s) => s.name);
@@ -101,6 +102,12 @@ export default function ProjectControls() {
               onClick={() => handleExport("csv")}
             >
               CSV
+            </button>
+            <button
+              className="block w-full px-3 py-1.5 text-left hover:bg-gray-700 whitespace-nowrap"
+              onClick={() => { canvasExport.fn?.(); setExportOpen(false); }}
+            >
+              Image (PNG)
             </button>
           </div>
         )}
