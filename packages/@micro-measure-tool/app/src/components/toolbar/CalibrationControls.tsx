@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCalibrationStore } from "../../stores/calibrationStore";
 
 export default function CalibrationControls() {
@@ -8,6 +8,10 @@ export default function CalibrationControls() {
   const startCalibrating = useCalibrationStore((s) => s.startCalibrating);
   const cancelCalibrating = useCalibrationStore((s) => s.cancelCalibrating);
   const [inputVal, setInputVal] = useState(String(ratio));
+
+  useEffect(() => {
+    setInputVal(String(ratio));
+  }, [ratio]);
 
   function saveRatio() {
     const v = parseFloat(inputVal);
