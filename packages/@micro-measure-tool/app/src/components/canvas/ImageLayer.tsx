@@ -63,6 +63,7 @@ export default function ImageLayer({ selectedId, onSelectImage, onDragHoverCellC
   const measurements = useMeasurementsStore((s) => s.measurements);
   const displayZoom = useCalibrationStore((s) => s.displayZoom);
   const setDisplayZoom = useCalibrationStore((s) => s.setDisplayZoom);
+  const setBaseZoom = useCalibrationStore((s) => s.setBaseZoom);
   const cellWidth = useGridStore((s) => s.cellWidth);
   const cellHeight = useGridStore((s) => s.cellHeight);
   const updateImage = useImagesStore((s) => s.updateImage);
@@ -89,6 +90,7 @@ export default function ImageLayer({ selectedId, onSelectImage, onDragHoverCellC
             );
             if (zoom > 0) {
               setDisplayZoom(zoom);
+              setBaseZoom(zoom);
               prevZoom.current = zoom;
               const vw = el.naturalWidth * zoom;
               const vh = el.naturalHeight * zoom;

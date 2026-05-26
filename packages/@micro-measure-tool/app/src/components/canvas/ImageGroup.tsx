@@ -116,7 +116,7 @@ export default function ImageGroup({
           y={localCenterY}
           draggable={!draggableLocked}
           rotation={imageData.rotation}
-          onClick={onSelect}
+          onClick={(e) => { if (e.evt.button === 0) onSelect(); }}
           onTap={onSelect}
           onDragStart={() => onDragHoverCellChange(null)}
           onDragMove={handleDragMove}

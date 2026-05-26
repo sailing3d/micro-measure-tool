@@ -5,6 +5,7 @@ import { useToolStore } from "../../stores/toolStore";
 export default function CalibrationControls() {
   const ratio = useCalibrationStore((s) => s.ratio);
   const displayZoom = useCalibrationStore((s) => s.displayZoom);
+  const baseZoom = useCalibrationStore((s) => s.baseZoom);
   const calibrating = useCalibrationStore((s) => s.calibrating);
   const setRatio = useCalibrationStore((s) => s.setRatio);
   const setDisplayZoom = useCalibrationStore((s) => s.setDisplayZoom);
@@ -66,6 +67,16 @@ export default function CalibrationControls() {
           className="ml-1 w-16 rounded bg-gray-800 px-1 py-0.5 text-center text-gray-200 outline-none"
         />
       </label>
+      <button
+        className="rounded bg-gray-800 px-1.5 py-0.5 text-xs text-gray-400 hover:bg-gray-700"
+        onClick={() => {
+          setDisplayZoom(baseZoom);
+          setZoomVal(String(baseZoom));
+        }}
+        title="重置缩放"
+      >
+        ↺
+      </button>
       <button
         className={`rounded px-2 py-0.5 text-xs text-gray-100 ${
           calibrating
