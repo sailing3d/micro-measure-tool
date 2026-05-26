@@ -33,7 +33,9 @@ export default function CanvasArea() {
   const displayZoom = useCalibrationStore((s) => s.displayZoom);
   const ratio = useCalibrationStore((s) => s.ratio);
   const finishCalibrating = useCalibrationStore((s) => s.finishCalibrating);
+  const cancelCalibrating = useCalibrationStore((s) => s.cancelCalibrating);
   const activeToolId = useToolStore((s) => s.activeToolId);
+  const selectTool = useToolStore((s) => s.selectTool);
   const addMeasurement = useMeasurementsStore((s) => s.addMeasurement);
   const measurements = useMeasurementsStore((s) => s.measurements);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -52,6 +54,26 @@ export default function CanvasArea() {
     window.addEventListener("resize", updateSize);
     return () => window.removeEventListener("resize", updateSize);
   }, []);
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      if (calibrating) {
+        cancelCalibrating();
+        calPoint1.current = null;
+        calPoint2.current = null;
+        calPointer.current = null;
+        calForce((n) => n + 1);
+        return;
+      }
+      if (activeToolId) {
+        getTool(activeToolId)?.reset();
+        selectTool(null);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [calibrating, activeToolId, cancelCalibrating, selectTool]);
 
   const isPanning = useRef(false);
   const panStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });

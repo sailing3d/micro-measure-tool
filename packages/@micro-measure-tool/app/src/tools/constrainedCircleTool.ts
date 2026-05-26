@@ -13,6 +13,7 @@ export class ConstrainedCircleTool implements MeasurementTool {
   private trajPointer: Point | null = null;
   private center: Point | null = null;
   private radius = 0;
+  private pendingConfirm = false;
 
   onPointerDown(point: Point): void {
     if (this.phase === "idle") {
@@ -22,7 +23,7 @@ export class ConstrainedCircleTool implements MeasurementTool {
     } else if (this.phase === "trajectory") {
       this.trajP2 = point;
     } else if (this.phase === "adjust") {
-      // confirm circle
+      this.pendingConfirm = true;
     }
   }
 
@@ -61,7 +62,8 @@ export class ConstrainedCircleTool implements MeasurementTool {
       this.phase = "adjust";
       return null;
     }
-    if (this.phase === "adjust" && this.center && this.radius > 0) {
+    if (this.phase === "adjust" && this.pendingConfirm && this.center && this.radius > 0) {
+      this.pendingConfirm = false;
       const data: MeasurementData = {
         id: `meas-${Date.now()}`,
         imageId: "",
@@ -69,12 +71,13 @@ export class ConstrainedCircleTool implements MeasurementTool {
         type: "constrained-circle",
         data: {
           trajectory: [this.trajP1!, this.trajP2!],
-          center: this.center,
+          center: { ...this.center },
           radiusPx: this.radius,
           diameterUm: 0,
         },
       };
-      this.reset();
+      this.center = null;
+      this.radius = 0;
       return data;
     }
     return null;
@@ -134,5 +137,6 @@ export class ConstrainedCircleTool implements MeasurementTool {
     this.trajPointer = null;
     this.center = null;
     this.radius = 0;
+    this.pendingConfirm = false;
   }
 }

@@ -1,6 +1,6 @@
 import { useToolStore } from "../../stores/toolStore";
 import { useCalibrationStore } from "../../stores/calibrationStore";
-import { getTools } from "../../tools/registry";
+import { getTools, getTool } from "../../tools/registry";
 
 export default function ToolSelector() {
   const activeToolId = useToolStore((s) => s.activeToolId);
@@ -10,7 +10,12 @@ export default function ToolSelector() {
 
   function handleSelect(id: string) {
     cancelCalibrating();
-    selectTool(activeToolId === id ? null : id);
+    if (activeToolId === id) {
+      getTool(id)?.reset();
+      selectTool(null);
+    } else {
+      selectTool(id);
+    }
   }
 
   return (
