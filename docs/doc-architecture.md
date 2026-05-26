@@ -2,7 +2,7 @@
 title: 架构设计 — Micro Measure Tool
 created: 2026-05-26
 date: 2026-05-26
-summary: 技术架构设计: 状态管理, 组件树, Konva 图层, 数据流, 测量工具插件体系.
+summary: 技术架构设计: 状态管理, 组件树, Konva 图层, 数据流, 测量工具插件体系. 更新至迭代改进后版本.
 related:
   - doc-requirements
 ---

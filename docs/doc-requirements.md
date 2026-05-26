@@ -2,7 +2,7 @@
 title: 产品需求文档 — 显微镜图像归集与测量工具
 created: 2026-05-25
 date: 2026-05-26
-summary: 定义 Micro Measure Tool 的功能需求, 交互模型, 数据结构.
+summary: 定义 Micro Measure Tool 的功能需求, 交互模型, 数据结构. 更新至迭代改进后版本.
 ---
 
 # 产品需求文档
