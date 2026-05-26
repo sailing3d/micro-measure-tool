@@ -44,8 +44,8 @@ export default function CalibrationControls() {
       <button
         className={`rounded px-2 py-0.5 text-xs text-gray-100 ${
           calibrating
-            ? "bg-red-600 hover:bg-red-500"
-            : "bg-blue-600 hover:bg-blue-500"
+            ? "bg-amber-600 hover:bg-amber-500"
+            : "bg-gray-800 hover:bg-gray-700"
         }`}
         onClick={calibrating ? cancelCalibrating : handleStartCalibrating}
       >
