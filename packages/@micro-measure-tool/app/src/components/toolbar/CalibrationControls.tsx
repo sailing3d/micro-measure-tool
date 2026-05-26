@@ -4,20 +4,32 @@ import { useToolStore } from "../../stores/toolStore";
 
 export default function CalibrationControls() {
   const ratio = useCalibrationStore((s) => s.ratio);
+  const displayZoom = useCalibrationStore((s) => s.displayZoom);
   const calibrating = useCalibrationStore((s) => s.calibrating);
   const setRatio = useCalibrationStore((s) => s.setRatio);
+  const setDisplayZoom = useCalibrationStore((s) => s.setDisplayZoom);
   const startCalibrating = useCalibrationStore((s) => s.startCalibrating);
   const cancelCalibrating = useCalibrationStore((s) => s.cancelCalibrating);
   const selectTool = useToolStore((s) => s.selectTool);
   const [inputVal, setInputVal] = useState(String(ratio));
+  const [zoomVal, setZoomVal] = useState(String(displayZoom));
 
   useEffect(() => {
     setInputVal(String(ratio));
   }, [ratio]);
 
+  useEffect(() => {
+    setZoomVal(String(displayZoom));
+  }, [displayZoom]);
+
   function saveRatio() {
     const v = parseFloat(inputVal);
     if (v > 0) setRatio(v);
+  }
+
+  function saveZoom() {
+    const v = parseFloat(zoomVal);
+    if (v > 0) setDisplayZoom(v);
   }
 
   function handleStartCalibrating() {
@@ -39,6 +51,19 @@ export default function CalibrationControls() {
           onBlur={saveRatio}
           onKeyDown={(e) => e.key === "Enter" && saveRatio()}
           className="ml-1 w-20 rounded bg-gray-800 px-1 py-0.5 text-center text-gray-200 outline-none"
+        />
+      </label>
+      <label>
+        Zoom
+        <input
+          type="number"
+          step="0.01"
+          min="0.01"
+          value={zoomVal}
+          onChange={(e) => setZoomVal(e.target.value)}
+          onBlur={saveZoom}
+          onKeyDown={(e) => e.key === "Enter" && saveZoom()}
+          className="ml-1 w-16 rounded bg-gray-800 px-1 py-0.5 text-center text-gray-200 outline-none"
         />
       </label>
       <button
