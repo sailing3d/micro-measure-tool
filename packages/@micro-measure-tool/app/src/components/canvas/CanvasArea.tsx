@@ -100,6 +100,7 @@ export default function CanvasArea() {
         const tool = getTool(activeToolId);
         if (!tool) return;
         const imageId = findImageAtPoint(pos);
+        if (!imageId) return;
         tool.onPointerDown(pos, imageId);
         toolForce((n) => n + 1);
       }
@@ -166,7 +167,7 @@ export default function CanvasArea() {
       if (result) {
         const imageId = findImageAtPoint(pos) || "";
         const count = measurements.filter((m) => m.imageId === imageId).length;
-        const calibrated = calibrateMeasurement(result, imageId, count + 1, ratio);
+        const calibrated = calibrateMeasurement(result, imageId, count + 1, ratio, displayZoom);
         addMeasurement(calibrated);
       }
       toolForce((n) => n + 1);
@@ -318,18 +319,19 @@ function calibrateMeasurement(
   imageId: string,
   seq: number,
   ratio: number,
+  displayZoom: number,
 ): import("../../types").MeasurementData {
   const result = { ...data, imageId, name: `测量 ${seq}` };
 
   if (data.type === "h-line" && "lengthPx" in data.data) {
     result.data = {
       ...data.data,
-      lengthUm: data.data.lengthPx * ratio,
+      lengthUm: (data.data.lengthPx / displayZoom) * ratio,
     };
   } else if (data.type === "constrained-circle" && "radiusPx" in data.data) {
     result.data = {
       ...data.data,
-      diameterUm: data.data.radiusPx * 2 * ratio,
+      diameterUm: (data.data.radiusPx * 2 / displayZoom) * ratio,
     };
   }
 

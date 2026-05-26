@@ -15,6 +15,7 @@ export default function App() {
   const isOpen = useProjectStore((s) => s.isOpen);
   const name = useProjectStore((s) => s.name);
   const ratio = useCalibrationStore((s) => s.ratio);
+  const displayZoom = useCalibrationStore((s) => s.displayZoom);
   const [showStartup, setShowStartup] = useState(true);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(null);
 
@@ -29,13 +30,13 @@ export default function App() {
     let changed = false;
     const updated = measurements.map((m) => {
       if (m.type === "h-line" && "lengthPx" in m.data) {
-        const newUm = m.data.lengthPx * ratio;
+        const newUm = (m.data.lengthPx / displayZoom) * ratio;
         if (Math.abs(m.data.lengthUm - newUm) > 0.001) {
           changed = true;
           return { ...m, data: { ...m.data, lengthUm: newUm } };
         }
       } else if (m.type === "constrained-circle" && "radiusPx" in m.data) {
-        const newUm = m.data.radiusPx * 2 * ratio;
+        const newUm = (m.data.radiusPx * 2 / displayZoom) * ratio;
         if (Math.abs(m.data.diameterUm - newUm) > 0.001) {
           changed = true;
           return { ...m, data: { ...m.data, diameterUm: newUm } };
@@ -44,7 +45,7 @@ export default function App() {
       return m;
     });
     if (changed) useMeasurementsStore.getState().setMeasurements(updated);
-  }, [isOpen, ratio]);
+  }, [isOpen, ratio, displayZoom]);
 
   useEffect(() => {
     if (!isOpen) return;
