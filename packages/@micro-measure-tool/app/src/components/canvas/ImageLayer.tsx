@@ -61,25 +61,27 @@ function renderMeasurement(
           dash={[4, 2]}
         />,
       );
-      elements.push(
-        <Circle
-          key={`${m.id}-dot`}
-          x={(mx + cmx) / 2}
-          y={(my + cmy) / 2}
-          radius={10}
-          stroke={isHighlighted ? "#06b6d4" : "#5eead4"}
-          strokeWidth={1}
-          listening={false}
-        />,
-      );
       if (num) {
         elements.push(
           <Text
             key={`${m.id}-num`}
-            x={(mx + cmx) / 2 + 6}
+            x={(mx + cmx) / 2 + 10}
             y={(my + cmy) / 2 - 14}
             text={num}
             fontSize={11}
+            fill={color}
+            listening={false}
+          />,
+        );
+      }
+      if ("lengthUm" in m.data && m.data.lengthUm > 0) {
+        elements.push(
+          <Text
+            key={`${m.id}-val`}
+            x={(mx + cmx) / 2 + 10}
+            y={(my + cmy) / 2 + 4}
+            text={`${m.data.lengthUm.toFixed(1)} µm`}
+            fontSize={10}
             fill={color}
             listening={false}
           />,

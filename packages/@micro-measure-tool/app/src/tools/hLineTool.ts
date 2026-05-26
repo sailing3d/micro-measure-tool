@@ -171,12 +171,6 @@ export class HLineTool implements MeasurementTool {
             fill: "#06b6d4",
           },
         });
-
-        shapes.push({
-          id: "connector-label",
-          type: "circle",
-          props: { x: (mx + cmx) / 2, y: (my + cmy) / 2, radius: 12, fill: "#00000000", stroke: "#06b6d4", strokeWidth: 1 },
-        });
       }
     }
 
