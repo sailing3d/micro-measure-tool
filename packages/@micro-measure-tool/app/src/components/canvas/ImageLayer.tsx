@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Layer, Line, Circle, Text } from "react-konva";
 import { useImagesStore } from "../../stores/imagesStore";
 import { useCalibrationStore } from "../../stores/calibrationStore";
@@ -242,6 +242,42 @@ export default function ImageLayer({
       }
     }
   }
+
+  // Recalculate displayZoom when grid cell size changes
+  const prevCellRef = useRef({ cellWidth, cellHeight });
+  useEffect(() => {
+    if (images.length === 0) return;
+    if (
+      prevCellRef.current.cellWidth === cellWidth &&
+      prevCellRef.current.cellHeight === cellHeight
+    ) {
+      prevCellRef.current = { cellWidth, cellHeight };
+      return;
+    }
+    prevCellRef.current = { cellWidth, cellHeight };
+    const firstImg = currentMap.get(images[0].id);
+    if (!firstImg || !firstImg.naturalWidth) return;
+    const zoom = Math.max(
+      cellWidth / firstImg.naturalWidth,
+      cellHeight / firstImg.naturalHeight,
+    );
+    if (zoom > 0 && zoom !== displayZoom) {
+      setDisplayZoom(zoom);
+      setBaseZoom(zoom);
+      for (const img of images) {
+        const el = currentMap.get(img.id);
+        if (el?.naturalWidth) {
+          const vw = el.naturalWidth * zoom;
+          const vh = el.naturalHeight * zoom;
+          updateImage(img.id, {
+            offsetX: Math.round((cellWidth - vw) / 2),
+            offsetY: Math.round((cellHeight - vh) / 2),
+          });
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cellWidth, cellHeight]);
 
   return (
     <Layer perfectDrawEnabled={false}>

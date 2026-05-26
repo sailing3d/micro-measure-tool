@@ -74,6 +74,7 @@ export default function App() {
     const setCols = useGridStore.getState().setCols;
     const setCellWidth = useGridStore.getState().setCellWidth;
     const setCellHeight = useGridStore.getState().setCellHeight;
+    const setCanvasScale = useGridStore.getState().setCanvasScale;
     const setRatio = useCalibrationStore.getState().setRatio;
     const setDisplayZoom = useCalibrationStore.getState().setDisplayZoom;
     const setBaseZoom = useCalibrationStore.getState().setBaseZoom;
@@ -84,6 +85,7 @@ export default function App() {
     setCols(data.grid.cols);
     setCellWidth(data.grid.cellWidth);
     setCellHeight(data.grid.cellHeight);
+    setCanvasScale(data.grid.canvasScale);
     setRatio(data.calibration.ratio);
     setDisplayZoom(data.displayZoom);
     setBaseZoom(data.displayZoom);
@@ -153,6 +155,7 @@ export default function App() {
             cellHeight: grid.cellHeight,
             panX: grid.panX,
             panY: grid.panY,
+            canvasScale: grid.canvasScale,
           },
           calibration: { ratio: cal.ratio, displayZoom: cal.displayZoom },
           images,

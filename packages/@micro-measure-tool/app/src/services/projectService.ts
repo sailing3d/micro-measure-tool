@@ -1,5 +1,5 @@
 import type { ImageData, MeasurementData, GridState, CalibrationState } from "../types";
-import { saveLastProjectHandle } from "./dbService";
+import { saveProjectHandle } from "./dbService";
 
 export let currentFolderHandle: FileSystemDirectoryHandle | null = null;
 
@@ -16,7 +16,7 @@ export interface ProjectData {
 
 function toProjectData(data: {
   name: string;
-  grid: { rows: number; cols: number; cellWidth: number; cellHeight: number; panX: number; panY: number };
+  grid: { rows: number; cols: number; cellWidth: number; cellHeight: number; panX: number; panY: number; canvasScale: number };
   calibration: { ratio: number; displayZoom: number };
   images: ImageData[];
   measurements: MeasurementData[];
@@ -31,6 +31,7 @@ function toProjectData(data: {
       cellHeight: data.grid.cellHeight,
       panX: data.grid.panX,
       panY: data.grid.panY,
+      canvasScale: data.grid.canvasScale,
     },
     calibration: { ratio: data.calibration.ratio, displayZoom: data.calibration.displayZoom },
     displayZoom: data.calibration.displayZoom,
@@ -55,7 +56,7 @@ export async function createProject(
   const projectData: ProjectData = {
     version: 1,
     name,
-    grid: { rows: 3, cols: 3, cellWidth: 600, cellHeight: 400, panX: 0, panY: 0 },
+    grid: { rows: 3, cols: 3, cellWidth: 600, cellHeight: 400, panX: 0, panY: 0, canvasScale: 1 },
     calibration: { ratio: 1, displayZoom: 1 },
     displayZoom: 1,
     images: [],
@@ -68,7 +69,7 @@ export async function createProject(
 
   currentFolderHandle = folderHandle;
   saveProjectToIndex(name, folderHandle.name);
-  saveLastProjectHandle(name, folderHandle);
+  saveProjectHandle(name, folderHandle);
 }
 
 export async function openProject(
@@ -93,7 +94,8 @@ export async function openProject(
     }
   }
 
-  saveLastProjectHandle(data.name, folderHandle);
+  saveProjectHandle(data.name, folderHandle);
+  saveProjectToIndex(data.name, folderHandle.name);
 
   return { data, imageHandles };
 }
@@ -102,7 +104,7 @@ export async function saveProject(
   folderHandle: FileSystemDirectoryHandle,
   data: {
     name: string;
-    grid: { rows: number; cols: number; cellWidth: number; cellHeight: number; panX: number; panY: number };
+  grid: { rows: number; cols: number; cellWidth: number; cellHeight: number; panX: number; panY: number; canvasScale: number };
     calibration: { ratio: number; displayZoom: number };
     images: ImageData[];
     measurements: MeasurementData[];

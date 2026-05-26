@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useShallow } from "zustand/shallow";
 import { createProject, openProject, listProjects, readImageAsBlobUrl } from "../../services/projectService";
+import { getProjectHandle } from "../../services/dbService";
 import { useProjectStore } from "../../stores/projectStore";
 import { useGridStore } from "../../stores/gridStore";
 import { useCalibrationStore } from "../../stores/calibrationStore";
@@ -25,6 +26,7 @@ export default function StartupDialog({ onProjectOpened }: Props) {
       setCellHeight: s.setCellHeight,
     })),
   );
+  const setCanvasScale = useGridStore((s) => s.setCanvasScale);
   const { setRatio, setDisplayZoom } = useCalibrationStore(
     useShallow((s) => ({
       setRatio: s.setRatio,
@@ -53,6 +55,42 @@ export default function StartupDialog({ onProjectOpened }: Props) {
       if ((err as Error).name !== "AbortError") {
         console.error("Failed to create project:", err);
       }
+    }
+  }
+
+  async function handleRecent(name: string) {
+    try {
+      const handle = await getProjectHandle(name);
+      if (handle) {
+        const res = await handle.queryPermission({ mode: "readwrite" });
+        if (res !== "granted") {
+          const reqRes = await handle.requestPermission({ mode: "readwrite" });
+          if (reqRes !== "granted") throw new Error("permission denied");
+        }
+        const { data } = await openProject(handle);
+        openProjectInStore(data.name);
+        setRows(data.grid.rows);
+        setCols(data.grid.cols);
+        setCellWidth(data.grid.cellWidth);
+        setCellHeight(data.grid.cellHeight);
+        setCanvasScale(data.grid.canvasScale);
+        setRatio(data.calibration.ratio);
+        setDisplayZoom(data.displayZoom);
+        const imgs = await Promise.all(
+          data.images.map(async (img) => {
+            const fp = await readImageAsBlobUrl(img.filename, handle);
+            return { ...img, filepath: fp };
+          }),
+        );
+        setImages(imgs);
+        const allMs = data.images.flatMap((img) => img.measurements);
+        setMeasurements(allMs);
+        onProjectOpened();
+      } else {
+        await handleOpen();
+      }
+    } catch {
+      await handleOpen();
     }
   }
 
@@ -148,7 +186,7 @@ export default function StartupDialog({ onProjectOpened }: Props) {
                 <button
                   key={p.path}
                   className="block w-full rounded px-2 py-1 text-left text-sm text-gray-300 hover:bg-gray-800"
-                  onClick={handleOpen}
+                  onClick={() => handleRecent(p.name)}
                 >
                   {p.name}
                   <span className="ml-2 text-xs text-gray-600">{p.path}</span>

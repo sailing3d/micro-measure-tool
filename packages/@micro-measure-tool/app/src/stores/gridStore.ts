@@ -8,6 +8,7 @@ interface GridActions {
   setCellWidth: (cellWidth: number) => void;
   setCellHeight: (cellHeight: number) => void;
   setPan: (x: number, y: number) => void;
+  setCanvasScale: (scale: number) => void;
 }
 
 const DEFAULT: GridState = {
@@ -17,6 +18,7 @@ const DEFAULT: GridState = {
   cellHeight: 400,
   panX: 0,
   panY: 0,
+  canvasScale: 1,
 };
 
 export const useGridStore = create<GridState & GridActions>()(
@@ -28,6 +30,7 @@ export const useGridStore = create<GridState & GridActions>()(
       setCellWidth: (cellWidth) => set({ cellWidth }),
       setCellHeight: (cellHeight) => set({ cellHeight }),
       setPan: (x, y) => set({ panX: x, panY: y }),
+      setCanvasScale: (canvasScale) => set({ canvasScale }),
     }),
     { name: "mmt-grid", storage: createJSONStorage(() => sessionStorage) },
   ),

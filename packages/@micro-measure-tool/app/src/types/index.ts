@@ -46,6 +46,7 @@ export interface GridState {
   cellHeight: number;
   panX: number;
   panY: number;
+  canvasScale: number;
 }
 
 export interface CalibrationState {

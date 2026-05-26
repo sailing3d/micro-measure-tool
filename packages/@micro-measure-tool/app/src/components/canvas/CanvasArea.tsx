@@ -29,7 +29,8 @@ export default function CanvasArea({ highlightedMeasurementId, onHighlightMeasur
   const panX = useGridStore((s) => s.panX);
   const panY = useGridStore((s) => s.panY);
   const setPan = useGridStore((s) => s.setPan);
-  const [scale, setScale] = useState(1);
+  const scale = useGridStore((s) => s.canvasScale);
+  const setScale = useGridStore((s) => s.setCanvasScale);
   const rows = useGridStore((s) => s.rows);
   const cols = useGridStore((s) => s.cols);
   const cellWidth = useGridStore((s) => s.cellWidth);
@@ -273,6 +274,8 @@ export default function CanvasArea({ highlightedMeasurementId, onHighlightMeasur
       if (occupied) return;
 
       const file = files[0];
+      if (!file.type.startsWith("image/")) return;
+
       const folderHandle = (await import("../../services/projectService")).currentFolderHandle;
       if (!folderHandle) return;
 

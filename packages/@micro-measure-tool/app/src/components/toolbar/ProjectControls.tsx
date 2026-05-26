@@ -23,6 +23,7 @@ export default function ProjectControls() {
   const cellHeight = useGridStore((s) => s.cellHeight);
   const panX = useGridStore((s) => s.panX);
   const panY = useGridStore((s) => s.panY);
+  const canvasScale = useGridStore((s) => s.canvasScale);
   const ratio = useCalibrationStore((s) => s.ratio);
   const displayZoom = useCalibrationStore((s) => s.displayZoom);
   const [exportOpen, setExportOpen] = useState(false);
@@ -31,12 +32,12 @@ export default function ProjectControls() {
     if (!currentFolderHandle) return;
     await saveProject(currentFolderHandle, {
       name,
-      grid: { rows, cols, cellWidth, cellHeight, panX, panY },
+      grid: { rows, cols, cellWidth, cellHeight, panX, panY, canvasScale },
       calibration: { ratio, displayZoom },
       images,
       measurements,
     });
-  }, [name, rows, cols, cellWidth, cellHeight, panX, panY, ratio, displayZoom, images, measurements]);
+  }, [name, rows, cols, cellWidth, cellHeight, panX, panY, canvasScale, ratio, displayZoom, images, measurements]);
 
   const handleExport = useCallback(
     async (format: "md" | "csv") => {

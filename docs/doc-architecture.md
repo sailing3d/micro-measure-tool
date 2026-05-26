@@ -21,114 +21,64 @@ related:
 
 | Store | 职责 |
 |-------|------|
-| `useProjectStore` | 当前项目名称, 路径, 是否已打开 |
-| `useGridStore` | 行数, 列数, 格子宽高, 画布平移偏移 |
-| `useCalibrationStore` | 像素-微米比例, 显示缩放 |
-| `useImagesStore` | 图片列表, 增删改, 格子分配, 变换 (位置/旋转/缩放) |
-| `useMeasurementsStore` | 每条测量记录, 按图片组织, 增删 |
-| `useToolStore` | 当前激活工具, 预览图形, 测量进行状态 |
+| `useProjectStore` | 项目名称, 是否已打开 |
+| `useGridStore` | 行列数, 格子大小, 画布平移, canvasScale |
+| `useCalibrationStore` | µm/px, displayZoom, baseZoom, 标定模式 |
+| `useImagesStore` | 图片 CRUD, 格子分配, label 序号 |
+| `useMeasurementsStore` | 测量记录增删 (discriminated union: HLine/ConstrainedCircle) |
+| `useToolStore` | 当前激活工具 ID |
 
-### 2.2 Store 接口
+> 以上为设计意图概述。实际类型定义见 `src/types/index.ts` 和 `src/stores/*.ts`。`folderHandle` 存储在 `projectService.currentFolderHandle` 而非 Store 中。
+
+### 2.2 测量数据结构
 
 ```typescript
-// ============ useProjectStore ============
-interface ProjectState {
-  name: string;
-  folderHandle: FileSystemDirectoryHandle | null;
-  isOpen: boolean;
-}
-// actions: openProject(), closeProject()
-
-// ============ useGridStore ============
-interface GridState {
-  rows: number;
-  cols: number;
-  cellWidth: number;
-  cellHeight: number;
-  panX: number;
-  panY: number;
-}
-// actions: setRows(), setCols(), setCellSize(), setPan()
-
-// ============ useCalibrationStore ============
-interface CalibrationState {
-  ratio: number;       // µm/pixel
-  displayZoom: number;
-}
-// actions: setRatio(), setDisplayZoom()
-
-// ============ useImagesStore ============
-interface ImageData {
-  id: string;
-  filename: string;
-  filepath: string;     // 项目文件夹内路径
-  cellIndex: number;
-  offsetX: number;      // 格内偏移
-  offsetY: number;
-  rotation: number;     // 度
-  scale: number;        // 格内额外缩放
-}
-interface ImagesState {
-  images: ImageData[];
-}
-// actions: addImage(), removeImage(), updateImage(), moveImageToCell()
-
-// ============ useMeasurementsStore ============
-interface Point { x: number; y: number; }
-
 interface MeasurementData {
   id: string;
   imageId: string;
-  name: string;         // 默认 "测量 1"
+  name: string;
   type: "h-line" | "constrained-circle";
-  // h-line
-  points?: [Point, Point];
-  lengthPx?: number;
-  lengthUm?: number;
-  // constrained-circle
-  trajectory?: [Point, Point];
-  center?: Point;
-  radiusPx?: number;
-  diameterUm?: number;
+  data: HLineMeasurement | ConstrainedCircleMeasurement;
 }
-interface MeasurementsState {
-  measurements: MeasurementData[];
-}
-// actions: addMeasurement(), removeMeasurement()
 
-// ============ useToolStore ============
-interface ToolState {
-  activeToolId: string | null;
-  isMeasuring: boolean;
+interface HLineMeasurement {
+  points: [Point, Point];       // 基线端点
+  paraPoints: [Point, Point];   // 平行线端点
+  lengthPx: number;             // 垂直距离 (px)
+  lengthUm: number;             // 垂直距离 (µm)
 }
-// actions: selectTool(), startMeasuring(), finishMeasuring()
+
+interface ConstrainedCircleMeasurement {
+  trajectory: [Point, Point];   // 约束轨迹线
+  center: Point;                // 圆心
+  radiusPx: number;             // 半径 (px)
+  diameterUm: number;           // 直径 (µm)
+}
 ```
 
 ## 3. 组件树
 
 ```
 App
-├── StartupDialog          ← 启动时: 新建项目 / 打开已有
-├── Layout
+├── StartupDialog          ← 启动时: 新建项目 / 打开已有 / 最近项目
+├── Layout (内联)
 │   ├── Toolbar
-│   │   ├── ProjectControls (新建, 打开, 导出 Markdown/CSV)
+│   │   ├── ProjectControls (项目, 保存, 导出 Markdown/CSV/PNG, 关闭)
 │   │   ├── GridControls   (rows, cols, cellWidth, cellHeight)
-│   │   ├── CalibrationControls (设置比例, 显示缩放)
-│   │   └── ToolSelector   (h-line, constrained-circle, ...)
+│   │   ├── CalibrationControls (µm/px, Zoom, 画线标定)
+│   │   ├── ToolSelector   (测量工具切换)
+│   │   └── HelpDialog     (? 按钮, 覆盖层)
 │   ├── CanvasArea
 │   │   └── KonvaStage
-│   │       ├── <Layer> GridLayer
-│   │       │   └── CellRect[]  (格子边框, 非交互)
+│   │       ├── <Layer> GridLayer (格子边框, 选中+拖放高亮)
 │   │       ├── <Layer> ImageLayer
-│   │       │   └── ImageGroup[] (每个图片一个 Group)
-│   │       │       ├── KonvaImage
-│   │       │       ├── MeasurementShapes[] (已完成的测量线/圆, 非交互)
-│   │       │       └── KonvaTransformer (缩放/旋转控件)
-│   │       └── <Layer> ToolPreviewLayer
-│   │           └── PreviewShapes[] (测量进行中的临时图形)
+│   │       │   ├── ImageGroup[] (每个图片, 含 clip + drag + rotate)
+│   │       │   └── MeasurementShapes[] (已完成的测量线/圆, 含交互 hover)
+│   │       ├── <Layer> ToolPreviewLayer (测量中的临时图形)
+│   │       └── <Layer> GridLabelsLayer (图片文件名, 顶层, 无交互)
 │   └── SidePanel
 │       ├── ImageList       (图片文件名, 支持重命名)
-│       └── MeasurementTree  (图片 → 测量名 → 结果, 支持删除)
+│       └── MeasurementTree  (图片 → 测量名 → 结果, 双向高亮)
 ```
 
 ## 4. Konva 图层设计
