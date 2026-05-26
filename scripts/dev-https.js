@@ -131,10 +131,7 @@ function startProxy() {
       port: 5173,
       path: clientReq.url,
       method: "GET",
-      headers: {
-        ...clientReq.headers,
-        host: "localhost:5173",
-      },
+      headers: { ...clientReq.headers, host: "localhost:5173" },
     };
 
     const proxyReq = http.request(options);
@@ -150,9 +147,7 @@ function startProxy() {
       proxySocket.pipe(clientSocket);
       clientSocket.pipe(proxySocket);
     });
-    proxyReq.on("error", () => {
-      clientSocket.end();
-    });
+    proxyReq.on("error", () => { clientSocket.end(); });
     proxyReq.end();
   });
     proxy.end(head);
