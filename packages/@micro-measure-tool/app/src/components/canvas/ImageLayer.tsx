@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Layer, Line, Circle } from "react-konva";
+import { Layer, Line, Circle, Text } from "react-konva";
 import { useImagesStore } from "../../stores/imagesStore";
 import { useCalibrationStore } from "../../stores/calibrationStore";
 import { useGridStore } from "../../stores/gridStore";
@@ -7,17 +7,50 @@ import { useMeasurementsStore } from "../../stores/measurementsStore";
 import type { MeasurementData } from "../../types";
 import ImageGroup from "./ImageGroup";
 
-function renderMeasurement(m: MeasurementData) {
+function measNum(name: string): string {
+  const m = name.match(/\d+/);
+  return m ? m[0] : "";
+}
+
+function renderMeasurement(
+  m: MeasurementData,
+  isHighlighted: boolean,
+  onHover: (id: string | null) => void,
+) {
+  const color = isHighlighted ? "#06b6d4" : m.type === "h-line" ? "#f59e0b" : "#3b82f6";
+  const sw = isHighlighted ? 3 : m.type === "h-line" ? 2 : 1.5;
+  const num = measNum(m.name);
+
   if (m.type === "h-line" && "points" in m.data) {
     const [p1, p2] = m.data.points;
-    return (
+    const midX = (p1.x + p2.x) / 2;
+    const midY = (p1.y + p2.y) / 2;
+    const elements = [
       <Line
         key={m.id}
         points={[p1.x, p1.y, p2.x, p2.y]}
-        stroke="#f59e0b"
-        strokeWidth={2}
-      />
-    );
+        stroke={color}
+        strokeWidth={sw}
+        onMouseEnter={() => onHover(m.id)}
+        onMouseLeave={() => onHover(null)}
+        hitStrokeWidth={10}
+        listening={true}
+      />,
+    ];
+    if (num) {
+      elements.push(
+        <Text
+          key={`${m.id}-num`}
+          x={midX + 6}
+          y={midY - 14}
+          text={num}
+          fontSize={11}
+          fill={color}
+          listening={false}
+        />,
+      );
+    }
+    return elements;
   }
   if (m.type === "constrained-circle") {
     const d = m.data;
@@ -28,8 +61,8 @@ function renderMeasurement(m: MeasurementData) {
         <Line
           key={`${m.id}-traj`}
           points={[t1.x, t1.y, t2.x, t2.y]}
-          stroke="#3b82f6"
-          strokeWidth={1}
+          stroke={color}
+          strokeWidth={0.5}
           dash={[4, 2]}
         />,
       );
@@ -41,10 +74,27 @@ function renderMeasurement(m: MeasurementData) {
           x={d.center.x}
           y={d.center.y}
           radius={d.radiusPx}
-          stroke="#3b82f6"
-          strokeWidth={1.5}
+          stroke={color}
+          strokeWidth={sw}
+          onMouseEnter={() => onHover(m.id)}
+          onMouseLeave={() => onHover(null)}
+          hitStrokeWidth={10}
+          listening={true}
         />,
       );
+      if (num) {
+        elements.push(
+          <Text
+            key={`${m.id}-num`}
+            x={d.center.x + d.radiusPx + 4}
+            y={d.center.y - 6}
+            text={num}
+            fontSize={11}
+            fill={color}
+            listening={false}
+          />,
+        );
+      }
     }
     return elements;
   }
@@ -54,12 +104,20 @@ function renderMeasurement(m: MeasurementData) {
 interface Props {
   selectedId: string | null;
   onSelectImage: (id: string | null) => void;
-  onHoverImage: (id: string | null) => void;
   onDragHoverCellChange: (cellIndex: number | null) => void;
+  highlightedMeasurementId: string | null;
+  onHoverMeasurement: (id: string | null) => void;
   draggableLocked: boolean;
 }
 
-export default function ImageLayer({ selectedId, onSelectImage, onHoverImage, onDragHoverCellChange, draggableLocked }: Props) {
+export default function ImageLayer({
+  selectedId,
+  onSelectImage,
+  onDragHoverCellChange,
+  highlightedMeasurementId,
+  onHoverMeasurement,
+  draggableLocked,
+}: Props) {
   const images = useImagesStore((s) => s.images);
   const measurements = useMeasurementsStore((s) => s.measurements);
   const displayZoom = useCalibrationStore((s) => s.displayZoom);
@@ -118,7 +176,6 @@ export default function ImageLayer({ selectedId, onSelectImage, onHoverImage, on
             imageElement={el}
             isSelected={selectedId === img.id}
             onDragHoverCellChange={onDragHoverCellChange}
-            onHover={(hovered) => onHoverImage(hovered ? img.id : null)}
             draggableLocked={draggableLocked}
             onSelect={() =>
               onSelectImage(selectedId === img.id ? null : img.id)
@@ -126,7 +183,9 @@ export default function ImageLayer({ selectedId, onSelectImage, onHoverImage, on
           />
         );
       })}
-      {measurements.map(renderMeasurement)}
+      {measurements.map((m) =>
+        renderMeasurement(m, highlightedMeasurementId === m.id, onHoverMeasurement),
+      )}
     </Layer>
   );
 }

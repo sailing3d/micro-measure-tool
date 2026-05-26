@@ -9,6 +9,7 @@ import { useMeasurementsStore } from "../../stores/measurementsStore";
 import { getTool } from "../../tools/registry";
 import { copyImageToProject } from "../../services/projectService";
 import GridLayer from "./GridLayer";
+import GridLabelsLayer from "./GridLabelsLayer";
 import ImageLayer from "./ImageLayer";
 import ToolPreviewLayer from "./ToolPreviewLayer";
 import type { Point } from "../../types";
@@ -16,11 +17,11 @@ import type { Point } from "../../types";
 const PADDING = 20;
 
 interface Props {
-  highlightedImageId: string | null;
-  onHighlightImage: (id: string | null) => void;
+  highlightedMeasurementId: string | null;
+  onHighlightMeasurement: (id: string | null) => void;
 }
 
-export default function CanvasArea({ highlightedImageId, onHighlightImage }: Props) {
+export default function CanvasArea({ highlightedMeasurementId, onHighlightMeasurement }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const [size, setSize] = useState({ width: 800, height: 600 });
@@ -299,20 +300,17 @@ export default function CanvasArea({ highlightedImageId, onHighlightImage }: Pro
               ? images.find((i) => i.id === selectedId)?.cellIndex ?? null
               : null
           }
-          highlightedCellIndex={
-            highlightedImageId
-              ? images.find((i) => i.id === highlightedImageId)?.cellIndex ?? null
-              : null
-          }
           dragTargetCellIndex={dragTargetCellIndex}
         />
         <ImageLayer
           selectedId={selectedId}
           onSelectImage={setSelectedId}
-          onHoverImage={onHighlightImage}
           onDragHoverCellChange={setDragTargetCellIndex}
+          highlightedMeasurementId={highlightedMeasurementId}
+          onHoverMeasurement={onHighlightMeasurement}
           draggableLocked={calibrating || !!activeToolId}
         />
+        <GridLabelsLayer />
         <ToolPreviewLayer />
         {calibrating && (
           <Layer>
