@@ -86,10 +86,29 @@ export default function CanvasArea({ highlightedMeasurementId, onHighlightMeasur
     canvasExport.fn = () => {
       const stage = stageRef.current;
       if (!stage) return;
+
+      const grid = useGridStore.getState();
+      const totalW = grid.cols * grid.cellWidth + PADDING * 2;
+      const totalH = grid.rows * grid.cellHeight + PADDING * 2;
+
+      const savedSize = stage.size();
+      const savedPos = stage.position();
+      const savedScale = stage.scale();
+
+      stage.size({ width: totalW, height: totalH });
+      stage.position({ x: 0, y: 0 });
+      stage.scale({ x: 1, y: 1 });
+      stage.batchDraw();
+
       stage.toBlob({
         mimeType: "image/png",
         pixelRatio: 2,
         callback: async (blob) => {
+          stage.size(savedSize);
+          stage.position(savedPos);
+          stage.scale(savedScale);
+          stage.batchDraw();
+
           if (!blob) return;
           try {
             const handle = await window.showSaveFilePicker({
