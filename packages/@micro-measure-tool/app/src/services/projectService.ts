@@ -1,4 +1,5 @@
 import type { ImageData, MeasurementData, GridState, CalibrationState } from "../types";
+import { saveLastProjectHandle } from "./dbService";
 
 export let currentFolderHandle: FileSystemDirectoryHandle | null = null;
 
@@ -67,6 +68,7 @@ export async function createProject(
 
   currentFolderHandle = folderHandle;
   saveProjectToIndex(name, folderHandle.name);
+  saveLastProjectHandle(name, folderHandle);
 }
 
 export async function openProject(
@@ -90,6 +92,8 @@ export async function openProject(
       // file may be missing
     }
   }
+
+  saveLastProjectHandle(data.name, folderHandle);
 
   return { data, imageHandles };
 }

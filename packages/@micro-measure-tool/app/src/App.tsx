@@ -6,6 +6,10 @@ import { useImagesStore } from "./stores/imagesStore";
 import { useMeasurementsStore } from "./stores/measurementsStore";
 import { initTools } from "./tools/init";
 import { saveProject, currentFolderHandle } from "./services/projectService";
+import { getLastProject } from "./services/dbService";
+import { openProject } from "./services/projectService";
+import { readImageAsBlobUrl } from "./services/projectService";
+import { clearLastProject } from "./services/dbService";
 import StartupDialog from "./components/startup/StartupDialog";
 import Toolbar from "./components/toolbar/Toolbar";
 import CanvasArea from "./components/canvas/CanvasArea";
@@ -14,15 +18,86 @@ import SidePanel from "./components/side-panel/SidePanel";
 export default function App() {
   const isOpen = useProjectStore((s) => s.isOpen);
   const name = useProjectStore((s) => s.name);
+  const openProjectInStore = useProjectStore((s) => s.openProject);
   const ratio = useCalibrationStore((s) => s.ratio);
   const displayZoom = useCalibrationStore((s) => s.displayZoom);
   const [showStartup, setShowStartup] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [highlightedMeasurementId, setHighlightedMeasurementId] = useState<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(null);
+  const triedRestore = useRef(false);
 
   useEffect(() => {
     initTools();
   }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      clearLastProject();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (triedRestore.current) return;
+    triedRestore.current = true;
+
+    (async () => {
+      try {
+        const saved = await getLastProject();
+        if (!saved) { setLoading(false); return; }
+
+        const result = await saved.handle.queryPermission({ mode: "readwrite" });
+        if (result !== "granted") {
+          const requestResult = await saved.handle.requestPermission({ mode: "readwrite" });
+          if (requestResult !== "granted") { setLoading(false); return; }
+        }
+
+        const { data } = await openProject(saved.handle);
+        populateStores(data, saved.handle);
+        openProjectInStore(data.name);
+        setShowStartup(false);
+      } catch {
+        // restore failed, show startup
+      }
+      setLoading(false);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function populateStores(
+    data: Awaited<ReturnType<typeof openProject>>["data"],
+    handle: FileSystemDirectoryHandle,
+  ) {
+    const setRows = useGridStore.getState().setRows;
+    const setCols = useGridStore.getState().setCols;
+    const setCellWidth = useGridStore.getState().setCellWidth;
+    const setCellHeight = useGridStore.getState().setCellHeight;
+    const setRatio = useCalibrationStore.getState().setRatio;
+    const setDisplayZoom = useCalibrationStore.getState().setDisplayZoom;
+    const setBaseZoom = useCalibrationStore.getState().setBaseZoom;
+    const setImages = useImagesStore.getState().setImages;
+    const setMeasurements = useMeasurementsStore.getState().setMeasurements;
+
+    setRows(data.grid.rows);
+    setCols(data.grid.cols);
+    setCellWidth(data.grid.cellWidth);
+    setCellHeight(data.grid.cellHeight);
+    setRatio(data.calibration.ratio);
+    setDisplayZoom(data.displayZoom);
+    setBaseZoom(data.displayZoom);
+
+    Promise.all(
+      data.images.map(async (img) => {
+        const filepath = await readImageAsBlobUrl(img.filename, handle);
+        return { ...img, filepath };
+      }),
+    ).then((imgsWithUrls) => {
+      setImages(imgsWithUrls);
+    });
+
+    const allMeasurements = data.images.flatMap((img) => img.measurements);
+    setMeasurements(allMeasurements);
+  }
 
   useEffect(() => {
     if (!isOpen) return;
@@ -88,6 +163,14 @@ export default function App() {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, [isOpen, name]);
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-950">
+        <p className="text-gray-500 text-sm">Loading...</p>
+      </div>
+    );
+  }
 
   if (!isOpen || showStartup) {
     return (
