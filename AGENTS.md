@@ -20,6 +20,7 @@ npm run dev            # 启动 dev server (http://localhost:5173)
 npm run dev:https      # 启动 HTTPS 代理 (https://0.0.0.0:5443) — 用于非 localhost 访问
 npm run build          # typecheck + 构建
 npm run deploy         # 构建 + 部署到 Cloudflare Pages
+npm run deploy         # 构建 + 部署到 Cloudflare Pages
 npm run lint           # ESLint
 npm run typecheck      # TypeScript 类型检查
 ```
