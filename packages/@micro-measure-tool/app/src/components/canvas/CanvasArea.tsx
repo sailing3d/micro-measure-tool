@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from "react";
-import { Stage, Layer, Line } from "react-konva";
+import { Stage, Layer, Line, Circle } from "react-konva";
 import Konva from "konva";
 import { useGridStore } from "../../stores/gridStore";
 import { useImagesStore } from "../../stores/imagesStore";
@@ -56,8 +56,9 @@ export default function CanvasArea() {
   const isPanning = useRef(false);
   const panStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
 
-  const calDrawing = useRef(false);
-  const calLineRef = useRef({ x1: 0, y1: 0, x2: 0, y2: 0 });
+  const calPoint1 = useRef<{ x: number; y: number } | null>(null);
+  const calPoint2 = useRef<{ x: number; y: number } | null>(null);
+  const calPointer = useRef<{ x: number; y: number } | null>(null);
   const [, calForce] = useState(0);
 
   const [, toolForce] = useState(0);
@@ -84,8 +85,12 @@ export default function CanvasArea() {
       if (e.evt.button === 0 && calibrating) {
         const pos = stageRef.current?.getRelativePointerPosition();
         if (!pos) return;
-        calDrawing.current = true;
-        calLineRef.current = { x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y };
+        if (!calPoint1.current) {
+          calPoint1.current = { x: pos.x, y: pos.y };
+          calPointer.current = { x: pos.x, y: pos.y };
+        } else {
+          calPoint2.current = { x: pos.x, y: pos.y };
+        }
         calForce((n) => n + 1);
         return;
       }
@@ -110,10 +115,10 @@ export default function CanvasArea() {
         setPan(panStart.current.panX + dx, panStart.current.panY + dy);
         return;
       }
-      if (calDrawing.current && calibrating) {
+      if (calPoint1.current && calibrating && !calPoint2.current) {
         const pos = stageRef.current?.getRelativePointerPosition();
         if (!pos) return;
-        calLineRef.current = { ...calLineRef.current, x2: pos.x, y2: pos.y };
+        calPointer.current = { x: pos.x, y: pos.y };
         calForce((n) => n + 1);
         return;
       }
@@ -134,17 +139,22 @@ export default function CanvasArea() {
       isPanning.current = false;
       return;
     }
-    if (calDrawing.current && calibrating) {
-      calDrawing.current = false;
-      const { x1, y1, x2, y2 } = calLineRef.current;
-      const dx = x2 - x1;
-      const dy = y2 - y1;
-      if (!displayZoom || dx === 0 && dy === 0) return;
-      const pxLen = Math.sqrt(dx * dx + dy * dy) / displayZoom;
-      const um = parseFloat(
-        prompt(`线段像素长度: ${pxLen.toFixed(2)} px\n请输入实际微米长度:`) || "",
-      );
-      if (um > 0) finishCalibrating(um / pxLen);
+    if (calibrating && calPoint1.current && calPoint2.current) {
+      const p1 = calPoint1.current;
+      const p2 = calPoint2.current;
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
+      if (displayZoom && (dx !== 0 || dy !== 0)) {
+        const pxLen = Math.sqrt(dx * dx + dy * dy) / displayZoom;
+        const um = parseFloat(
+          prompt(`线段像素长度: ${pxLen.toFixed(2)} px\n请输入实际微米长度:`) || "",
+        );
+        if (um > 0) finishCalibrating(um / pxLen);
+      }
+      calPoint1.current = null;
+      calPoint2.current = null;
+      calPointer.current = null;
+      calForce((n) => n + 1);
       return;
     }
     if (activeToolId) {
@@ -207,7 +217,9 @@ export default function CanvasArea() {
     e.preventDefault();
   }, []);
 
-  const calLine = calLineRef.current;
+  const cp1 = calPoint1.current;
+  const cp2 = calPoint2.current;
+  const cpp = calPointer.current;
 
   return (
     <div
@@ -260,16 +272,40 @@ export default function CanvasArea() {
           selectedId={selectedId}
           onSelectImage={setSelectedId}
           onDragHoverCellChange={setDragTargetCellIndex}
+          draggableLocked={calibrating || !!activeToolId}
         />
         <ToolPreviewLayer />
         {calibrating && (
           <Layer>
-            <Line
-              points={[calLine.x1, calLine.y1, calLine.x2, calLine.y2]}
-              stroke="#3b82f6"
-              strokeWidth={2}
-              dash={[6, 3]}
-            />
+            {cp1 && (
+              <>
+                <Circle
+                  x={cp1.x}
+                  y={cp1.y}
+                  radius={4}
+                  fill="#3b82f6"
+                />
+                {cp2 && (
+                  <Circle
+                    x={cp2.x}
+                    y={cp2.y}
+                    radius={4}
+                    fill="#3b82f6"
+                  />
+                )}
+                <Line
+                  points={[
+                    cp1.x,
+                    cp1.y,
+                    (cp2 || cpp || cp1).x,
+                    (cp2 || cpp || cp1).y,
+                  ]}
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  dash={cp2 ? undefined : [6, 3]}
+                />
+              </>
+            )}
           </Layer>
         )}
       </Stage>

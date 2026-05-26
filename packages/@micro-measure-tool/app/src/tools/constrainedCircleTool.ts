@@ -8,29 +8,34 @@ export class ConstrainedCircleTool implements MeasurementTool {
   name = "限定圆";
 
   private phase: Phase = "idle";
-  private trajectoryStart: Point | null = null;
-  private trajectoryEnd: Point | null = null;
+  private trajP1: Point | null = null;
+  private trajP2: Point | null = null;
+  private trajPointer: Point | null = null;
   private center: Point | null = null;
   private radius = 0;
 
   onPointerDown(point: Point): void {
     if (this.phase === "idle") {
-      this.trajectoryStart = point;
-      this.trajectoryEnd = point;
+      this.trajP1 = point;
+      this.trajPointer = point;
       this.phase = "trajectory";
+    } else if (this.phase === "trajectory") {
+      this.trajP2 = point;
+    } else if (this.phase === "adjust") {
+      // confirm circle
     }
   }
 
   onPointerMove(point: Point): void {
     if (this.phase === "trajectory") {
-      this.trajectoryEnd = point;
+      this.trajPointer = point;
       return;
     }
-    if (this.phase === "adjust" && this.trajectoryStart && this.trajectoryEnd) {
-      const tx = this.trajectoryStart.x;
-      const ty = this.trajectoryStart.y;
-      const tdx = this.trajectoryEnd.x - tx;
-      const tdy = this.trajectoryEnd.y - ty;
+    if (this.phase === "adjust" && this.trajP1 && this.trajP2) {
+      const tx = this.trajP1.x;
+      const ty = this.trajP1.y;
+      const tdx = this.trajP2.x - tx;
+      const tdy = this.trajP2.y - ty;
       const tLen = Math.sqrt(tdx * tdx + tdy * tdy);
       if (tLen === 0) return;
 
@@ -45,7 +50,6 @@ export class ConstrainedCircleTool implements MeasurementTool {
         x: tx + tux * clampedProj,
         y: ty + tuy * clampedProj,
       };
-
       const perpX = dx - tux * proj;
       const perpY = dy - tuy * proj;
       this.radius = Math.sqrt(perpX * perpX + perpY * perpY);
@@ -53,8 +57,7 @@ export class ConstrainedCircleTool implements MeasurementTool {
   }
 
   onPointerUp(): MeasurementData | null {
-    if (this.phase === "trajectory") {
-      if (!this.trajectoryStart || !this.trajectoryEnd) return null;
+    if (this.phase === "trajectory" && this.trajP1 && this.trajP2) {
       this.phase = "adjust";
       return null;
     }
@@ -65,7 +68,7 @@ export class ConstrainedCircleTool implements MeasurementTool {
         name: "",
         type: "constrained-circle",
         data: {
-          trajectory: [this.trajectoryStart!, this.trajectoryEnd!],
+          trajectory: [this.trajP1!, this.trajP2!],
           center: this.center,
           radiusPx: this.radius,
           diameterUm: 0,
@@ -80,20 +83,32 @@ export class ConstrainedCircleTool implements MeasurementTool {
   getPreview(): ShapeData[] {
     const shapes: ShapeData[] = [];
 
-    if (this.trajectoryStart && this.trajectoryEnd) {
+    if (this.trajP1) {
+      shapes.push({
+        id: "traj-p1",
+        type: "circle",
+        props: { x: this.trajP1.x, y: this.trajP1.y, radius: 4, fill: "#3b82f6" },
+      });
+    }
+
+    if (this.trajP2) {
+      shapes.push({
+        id: "traj-p2",
+        type: "circle",
+        props: { x: this.trajP2.x, y: this.trajP2.y, radius: 4, fill: "#3b82f6" },
+      });
+    }
+
+    const end = this.trajP2 || this.trajPointer;
+    if (this.trajP1 && end) {
       shapes.push({
         id: "trajectory",
         type: "line",
         props: {
-          points: [
-            this.trajectoryStart.x,
-            this.trajectoryStart.y,
-            this.trajectoryEnd.x,
-            this.trajectoryEnd.y,
-          ],
+          points: [this.trajP1.x, this.trajP1.y, end.x, end.y],
           stroke: "#3b82f6",
           strokeWidth: 2,
-          dash: [6, 3],
+          ...(this.trajP2 ? {} : { dash: [6, 3] }),
         },
       });
     }
@@ -103,11 +118,8 @@ export class ConstrainedCircleTool implements MeasurementTool {
         id: "preview-circle",
         type: "circle",
         props: {
-          x: this.center.x,
-          y: this.center.y,
-          radius: this.radius,
-          stroke: "#3b82f6",
-          strokeWidth: 1.5,
+          x: this.center.x, y: this.center.y, radius: this.radius,
+          stroke: "#3b82f6", strokeWidth: 1.5,
         },
       });
     }
@@ -117,8 +129,9 @@ export class ConstrainedCircleTool implements MeasurementTool {
 
   reset(): void {
     this.phase = "idle";
-    this.trajectoryStart = null;
-    this.trajectoryEnd = null;
+    this.trajP1 = null;
+    this.trajP2 = null;
+    this.trajPointer = null;
     this.center = null;
     this.radius = 0;
   }

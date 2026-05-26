@@ -20,6 +20,7 @@ interface Props {
   isSelected: boolean;
   onDragHoverCellChange: (cellIndex: number | null) => void;
   onSelect: () => void;
+  draggableLocked: boolean;
 }
 
 export default function ImageGroup({
@@ -28,6 +29,7 @@ export default function ImageGroup({
   isSelected,
   onDragHoverCellChange,
   onSelect,
+  draggableLocked,
 }: Props) {
   const cellWidth = useGridStore((s) => s.cellWidth);
   const cellHeight = useGridStore((s) => s.cellHeight);
@@ -128,7 +130,7 @@ export default function ImageGroup({
         clipX={0} clipY={0} clipWidth={cellWidth} clipHeight={cellHeight}>
         <Group ref={imgGroupRef}
           x={localCenterX} y={localCenterY}
-          draggable
+          draggable={!draggableLocked}
           rotation={imageData.rotation}
           scaleX={imageData.scale} scaleY={imageData.scale}
           onClick={onSelect} onTap={onSelect}

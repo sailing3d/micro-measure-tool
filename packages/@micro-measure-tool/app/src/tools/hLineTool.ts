@@ -5,29 +5,31 @@ export class HLineTool implements MeasurementTool {
   id = "h-line";
   name = "长度测量";
 
-  private start: Point | null = null;
-  private current: Point | null = null;
+  private point1: Point | null = null;
+  private point2: Point | null = null;
+  private pointer: Point | null = null;
 
   onPointerDown(point: Point): void {
-    this.start = point;
-    this.current = point;
+    if (!this.point1) {
+      this.point1 = point;
+      this.pointer = point;
+    } else {
+      this.point2 = point;
+    }
   }
 
   onPointerMove(point: Point): void {
-    this.current = point;
+    this.pointer = point;
   }
 
   onPointerUp(): MeasurementData | null {
-    if (!this.start || !this.current) return null;
+    if (!this.point1 || !this.point2) return null;
 
-    const dx = this.current.x - this.start.x;
-    const dy = this.current.y - this.start.y;
+    const dx = this.point2.x - this.point1.x;
+    const dy = this.point2.y - this.point1.y;
     const lengthPx = Math.sqrt(dx * dx + dy * dy);
 
-    if (lengthPx < 5) {
-      this.reset();
-      return null;
-    }
+    if (lengthPx < 5) return null;
 
     const data: MeasurementData = {
       id: `meas-${Date.now()}`,
@@ -35,7 +37,7 @@ export class HLineTool implements MeasurementTool {
       name: "",
       type: "h-line",
       data: {
-        points: [this.start, this.current],
+        points: [this.point1, this.point2],
         lengthPx,
         lengthUm: 0,
       },
@@ -46,22 +48,40 @@ export class HLineTool implements MeasurementTool {
   }
 
   getPreview(): ShapeData[] {
-    if (!this.start || !this.current) return [];
-    return [
-      {
-        id: "h-line-main",
+    const shapes: ShapeData[] = [];
+    if (this.point1) {
+      shapes.push({
+        id: "point1",
+        type: "circle",
+        props: { x: this.point1.x, y: this.point1.y, radius: 4, fill: "#f59e0b" },
+      });
+    }
+    if (this.point2) {
+      shapes.push({
+        id: "point2",
+        type: "circle",
+        props: { x: this.point2.x, y: this.point2.y, radius: 4, fill: "#f59e0b" },
+      });
+    }
+    const end = this.point2 || this.pointer;
+    if (this.point1 && end) {
+      shapes.push({
+        id: "line",
         type: "line",
         props: {
-          points: [this.start.x, this.start.y, this.current.x, this.current.y],
-          stroke: "#f59e0b",
+          points: [this.point1.x, this.point1.y, end.x, end.y],
+          stroke: this.point2 ? "#f59e0b" : "#fbbf24",
           strokeWidth: 2,
+          ...(this.point2 ? {} : { dash: [6, 3] }),
         },
-      },
-    ];
+      });
+    }
+    return shapes;
   }
 
   reset(): void {
-    this.start = null;
-    this.current = null;
+    this.point1 = null;
+    this.point2 = null;
+    this.pointer = null;
   }
 }
