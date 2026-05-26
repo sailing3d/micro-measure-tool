@@ -17,6 +17,7 @@ export default function App() {
   const ratio = useCalibrationStore((s) => s.ratio);
   const displayZoom = useCalibrationStore((s) => s.displayZoom);
   const [showStartup, setShowStartup] = useState(true);
+  const [highlightedImageId, setHighlightedImageId] = useState<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(null);
 
   useEffect(() => {
@@ -100,8 +101,8 @@ export default function App() {
     <div className="flex h-screen flex-col bg-gray-950">
       <Toolbar />
       <div className="flex flex-1 overflow-hidden">
-        <CanvasArea />
-        <SidePanel />
+        <CanvasArea highlightedImageId={highlightedImageId} onHighlightImage={setHighlightedImageId} />
+        <SidePanel highlightedImageId={highlightedImageId} onHighlightImage={setHighlightedImageId} />
       </div>
     </div>
   );

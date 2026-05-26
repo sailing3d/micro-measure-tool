@@ -36,6 +36,7 @@ function toProjectData(data: {
     images: data.images.map((img) => ({
       id: img.id,
       filename: img.filename,
+      label: img.label,
       cellIndex: img.cellIndex,
       offsetX: img.offsetX,
       offsetY: img.offsetY,

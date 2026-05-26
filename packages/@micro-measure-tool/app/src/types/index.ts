@@ -12,6 +12,7 @@ export interface ImageData {
   offsetY: number;
   rotation: number;
   scale: number;
+  label?: number;
 }
 
 export type MeasurementType = "h-line" | "constrained-circle";

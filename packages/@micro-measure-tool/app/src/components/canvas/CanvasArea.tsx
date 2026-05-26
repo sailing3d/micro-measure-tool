@@ -15,7 +15,12 @@ import type { Point } from "../../types";
 
 const PADDING = 20;
 
-export default function CanvasArea() {
+interface Props {
+  highlightedImageId: string | null;
+  onHighlightImage: (id: string | null) => void;
+}
+
+export default function CanvasArea({ highlightedImageId, onHighlightImage }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const [size, setSize] = useState({ width: 800, height: 600 });
@@ -189,8 +194,12 @@ export default function CanvasArea() {
       const result = tool.onPointerUp(pos);
       if (result) {
         const imageId = findImageAtPoint(pos) || "";
-        const count = measurements.filter((m) => m.imageId === imageId).length;
-        const calibrated = calibrateMeasurement(result, imageId, count + 1, ratio, displayZoom);
+        const imgMeasurements = measurements.filter((m) => m.imageId === imageId);
+        const maxNum = imgMeasurements.reduce((m, x) => {
+          const n = parseInt(x.name.replace(/\D/g, "")) || 0;
+          return Math.max(m, n);
+        }, 0);
+        const calibrated = calibrateMeasurement(result, imageId, maxNum + 1, ratio, displayZoom);
         addMeasurement(calibrated);
       }
       toolForce((n) => n + 1);
@@ -290,11 +299,17 @@ export default function CanvasArea() {
               ? images.find((i) => i.id === selectedId)?.cellIndex ?? null
               : null
           }
+          highlightedCellIndex={
+            highlightedImageId
+              ? images.find((i) => i.id === highlightedImageId)?.cellIndex ?? null
+              : null
+          }
           dragTargetCellIndex={dragTargetCellIndex}
         />
         <ImageLayer
           selectedId={selectedId}
           onSelectImage={setSelectedId}
+          onHoverImage={onHighlightImage}
           onDragHoverCellChange={setDragTargetCellIndex}
           draggableLocked={calibrating || !!activeToolId}
         />

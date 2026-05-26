@@ -15,7 +15,11 @@ export const useImagesStore = create<ImagesState>()(
   persist(
     (set) => ({
       images: [],
-      addImage: (img) => set((s) => ({ images: [...s.images, img] })),
+      addImage: (img) =>
+        set((s) => {
+          const maxLabel = s.images.reduce((m, i) => Math.max(m, i.label || 0), 0);
+          return { images: [...s.images, { ...img, label: maxLabel + 1 }] };
+        }),
       removeImage: (id) =>
         set((s) => {
           const img = s.images.find((i) => i.id === id);

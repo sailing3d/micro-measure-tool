@@ -14,6 +14,7 @@ interface Props {
   isSelected: boolean;
   onDragHoverCellChange: (cellIndex: number | null) => void;
   onSelect: () => void;
+  onHover: (hovered: boolean) => void;
   draggableLocked: boolean;
 }
 
@@ -23,6 +24,7 @@ export default function ImageGroup({
   isSelected,
   onDragHoverCellChange,
   onSelect,
+  onHover,
   draggableLocked,
 }: Props) {
   const cellWidth = useGridStore((s) => s.cellWidth);
@@ -118,6 +120,8 @@ export default function ImageGroup({
           rotation={imageData.rotation}
           onClick={(e) => { if (e.evt.button === 0) onSelect(); }}
           onTap={onSelect}
+          onMouseEnter={() => onHover(true)}
+          onMouseLeave={() => onHover(false)}
           onDragStart={() => onDragHoverCellChange(null)}
           onDragMove={handleDragMove}
           onDragEnd={handleDragEnd}
