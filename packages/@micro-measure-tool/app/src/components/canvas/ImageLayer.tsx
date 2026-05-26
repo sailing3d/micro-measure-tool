@@ -147,9 +147,25 @@ function renderMeasurement(
           <Text
             key={`${m.id}-num`}
             x={d.center.x + d.radiusPx + 4}
-            y={d.center.y - 6}
+            y={d.center.y - 16}
             text={num}
             fontSize={11}
+            fill={color}
+            stroke="#ffffff"
+            strokeWidth={0.2}
+            fillAfterStrokeEnabled={false}
+            listening={false}
+          />,
+        );
+      }
+      if ("diameterUm" in d && d.diameterUm > 0) {
+        elements.push(
+          <Text
+            key={`${m.id}-val`}
+            x={d.center.x + d.radiusPx + 4}
+            y={d.center.y + 6}
+            text={`${d.diameterUm.toFixed(1)} µm`}
+            fontSize={10}
             fill={color}
             stroke="#ffffff"
             strokeWidth={0.2}
