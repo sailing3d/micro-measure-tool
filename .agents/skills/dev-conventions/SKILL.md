@@ -114,21 +114,17 @@ git add ... && git commit -m "..."
 #    - 保留有意义的, 逻辑独立的提交
 #    - 每个 commit message 保持清晰, 描述做了什么和为什么
 
-# 4. Rebase 到开发分支 (线性历史, 无 merge commit)
-git fetch origin
-git rebase origin/main
-
-# 5. 合并到开发分支
+# 4. 合并到开发分支
 git checkout main
-git merge task-yyyy-mm-dd-xxx --ff-only   # 快进合并, 保持线性
+git pull origin main   # 确保 main 是最新的
+git merge task-yyyy-mm-dd-xxx   # 快进合并
 
-# 6. 保留任务分支, 以备后续回顾和文档链接, 但不推送
+# 5. 保留任务分支, 以备后续回顾和文档链接, 但不推送
 ```
 
 ### 原则
 
 - 一个 task 对应一个分支, 分支名与 task 文件对应
-- 完成后必须 rebase, 拒绝 merge commit (保持历史线性)
 - 每个 commit 独立有意义, 避免 "fix" "WIP" "update" 等模糊提交
 - 任务分支不推送远程, 仅在本地保留, 以便后续回顾和文档链接
 
