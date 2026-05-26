@@ -53,7 +53,7 @@ export class HLineTool implements MeasurementTool {
       shapes.push({
         id: "point1",
         type: "circle",
-        props: { x: this.point1.x, y: this.point1.y, radius: 4, fill: "#f59e0b" },
+        props: { x: this.point1.x, y: this.point1.y, radius: 4, fill: "#14b8a6" },
       });
     }
     if (this.point2) {
@@ -70,7 +70,7 @@ export class HLineTool implements MeasurementTool {
         type: "line",
         props: {
           points: [this.point1.x, this.point1.y, end.x, end.y],
-          stroke: this.point2 ? "#f59e0b" : "#fbbf24",
+          stroke: this.point2 ? "#14b8a6" : "#99f6e4",
           strokeWidth: 2,
           ...(this.point2 ? {} : { dash: [6, 3] }),
         },

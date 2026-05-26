@@ -17,7 +17,7 @@ function renderMeasurement(
   isHighlighted: boolean,
   onHover: (id: string | null) => void,
 ) {
-  const color = isHighlighted ? "#06b6d4" : m.type === "h-line" ? "#f59e0b" : "#3b82f6";
+  const color = isHighlighted ? "#06b6d4" : m.type === "h-line" ? "#14b8a6" : "#6366f1";
   const sw = isHighlighted ? 3 : m.type === "h-line" ? 2 : 1.5;
   const num = measNum(m.name);
 
@@ -165,7 +165,7 @@ export default function ImageLayer({
   }
 
   return (
-    <Layer>
+    <Layer perfectDrawEnabled={false}>
       {images.map((img) => {
         const el = currentMap.get(img.id);
         if (!el) return null;
